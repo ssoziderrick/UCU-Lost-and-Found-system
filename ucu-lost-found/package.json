@@ -1,0 +1,14 @@
+{
+  "name": "ucu-lost-found",
+  "version": "1.0.0",
+  "private": true,
+  "description": "UCU Campus Lost-and-Found System (React + Express + MySQL)",
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server start",
+    "db:setup": "npm --prefix server run db:setup",
+    "test": "npm --prefix server test && npm --prefix client test"
+  },
+  "engines": { "node": ">=18" }
+}

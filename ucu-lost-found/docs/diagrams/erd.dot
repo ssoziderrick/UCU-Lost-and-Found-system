@@ -1,0 +1,50 @@
+digraph ERD {
+  graph [rankdir=LR, fontname="Helvetica", bgcolor="white", pad=0.3, nodesep=0.5, ranksep=0.9];
+  node  [shape=plain, fontname="Helvetica", fontsize=11];
+  edge  [fontname="Helvetica", fontsize=9, color="#4a5868", arrowhead=crow, arrowtail=tee, dir=both];
+  users [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#17365d">
+   <tr><td bgcolor="#17365d"><font color="white"><b>users</b></font></td></tr>
+   <tr><td align="left">🔑 id INT PK</td></tr><tr><td align="left">full_name VARCHAR(100)</td></tr>
+   <tr><td align="left">email VARCHAR(150) UNIQUE</td></tr><tr><td align="left">student_number UNIQUE NULL</td></tr>
+   <tr><td align="left">phone NULL (admin-only)</td></tr><tr><td align="left">password_hash (bcrypt)</td></tr>
+   <tr><td align="left">role ENUM(student, admin)</td></tr><tr><td align="left">created_at</td></tr></table>>];
+  sessions [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#17365d">
+   <tr><td bgcolor="#17365d"><font color="white"><b>sessions</b></font></td></tr>
+   <tr><td align="left">🔑 id PK</td></tr><tr><td align="left">user_id FK</td></tr>
+   <tr><td align="left">token_hash CHAR(64) UNIQUE</td></tr><tr><td align="left">expires_at</td></tr></table>>];
+  reports [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#17365d">
+   <tr><td bgcolor="#17365d"><font color="white"><b>reports</b></font></td></tr>
+   <tr><td align="left">🔑 id PK</td></tr><tr><td align="left">user_id FK (reporter)</td></tr>
+   <tr><td align="left">type ENUM(lost, found)</td></tr><tr><td align="left">title, description (public)</td></tr>
+   <tr><td align="left" bgcolor="#fff1d6">private_details (finder+admin)</td></tr>
+   <tr><td align="left">category_id FK, location_id FK</td></tr><tr><td align="left">event_date DATE, location_detail</td></tr>
+   <tr><td align="left">status ENUM(open, awaiting_collection,<br align="left"/>  returned, closed, removed)</td></tr>
+   <tr><td align="left">returned_at, created_at, updated_at</td></tr></table>>];
+  photos [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#17365d">
+   <tr><td bgcolor="#17365d"><font color="white"><b>report_photos</b></font></td></tr>
+   <tr><td align="left">🔑 report_id PK/FK</td></tr><tr><td align="left">mime_type, size_bytes</td></tr><tr><td align="left">data MEDIUMBLOB</td></tr></table>>];
+  claims [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#17365d">
+   <tr><td bgcolor="#17365d"><font color="white"><b>claims</b></font></td></tr>
+   <tr><td align="left">🔑 id PK</td></tr><tr><td align="left">report_id FK, claimant_id FK</td></tr>
+   <tr><td align="left" bgcolor="#fff1d6">evidence (claimant+admin)</td></tr>
+   <tr><td align="left">status ENUM(pending, approved,<br align="left"/>  rejected, collected)</td></tr>
+   <tr><td align="left">admin_reason, collection_instructions</td></tr>
+   <tr><td align="left">reviewed_by FK, reviewed_at, collected_at</td></tr>
+   <tr><td align="left" bgcolor="#e3f4ea">approved_lock UNIQUE (generated)</td></tr>
+   <tr><td align="left">UNIQUE(report_id, claimant_id)</td></tr></table>>];
+  actions [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#17365d">
+   <tr><td bgcolor="#17365d"><font color="white"><b>admin_actions</b></font></td></tr>
+   <tr><td align="left">🔑 id PK</td></tr><tr><td align="left">admin_id FK</td></tr><tr><td align="left">action, report_id, claim_id</td></tr><tr><td align="left">note, created_at</td></tr></table>>];
+  categories [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#17365d">
+   <tr><td bgcolor="#17365d"><font color="white"><b>categories</b></font></td></tr><tr><td align="left">🔑 id, name UNIQUE</td></tr></table>>];
+  locations [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#17365d">
+   <tr><td bgcolor="#17365d"><font color="white"><b>locations</b></font></td></tr><tr><td align="left">🔑 id, name UNIQUE</td></tr></table>>];
+  users -> sessions [label="1 : N"];
+  users -> reports [label="reports 1 : N"];
+  users -> claims [label="claims 1 : N"];
+  reports -> claims [label="1 : N"];
+  reports -> photos [label="1 : 0..1", arrowhead=teeodot];
+  categories -> reports [label="1 : N"];
+  locations -> reports [label="1 : N"];
+  users -> actions [label="admin 1 : N"];
+}

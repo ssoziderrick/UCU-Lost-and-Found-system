@@ -1,0 +1,19 @@
+digraph W {
+  graph [rankdir=LR, fontname="Helvetica", pad=0.3, nodesep=0.3, ranksep=0.35, bgcolor="white", newrank=true];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#e4ecf8", color="#17365d", width=1.6];
+  edge [fontname="Helvetica", fontsize=9, color="#4a5868"];
+  subgraph cluster_f { label="Finder (Namusoke)"; fontname="Helvetica-Bold"; style="rounded,filled"; fillcolor="#f7f9fc"; color="#8796a8";
+    f1 [label="Log in"]; f2 [label="Report FOUND item\npublic description + photo\n+ 🔒 private details"]; f3 [label="Hand item to\nLost & Found office"]; f1->f2->f3; }
+  subgraph cluster_o { label="Owner (Okello)"; fontname="Helvetica-Bold"; style="rounded,filled"; fillcolor="#f7f9fc"; color="#8796a8";
+    o1 [label="Search & filter\nkeyword · category ·\nlocation · date · type"]; o2 [label="Open listing"]; o3 [label="Submit private claim\n(detail only owner knows)"]; o4 [label="Track status\nin My claims"]; o5 [label="Collect item\nwith student ID"]; o1->o2->o3->o4->o5; }
+  subgraph cluster_a { label="Administrator"; fontname="Helvetica-Bold"; style="rounded,filled"; fillcolor="#f7f9fc"; color="#8796a8";
+    a1 [label="Claims queue"]; a2 [label="Compare evidence with\nfinder's private details"]; a3 [shape=diamond, label="Decision", width=1.1];
+    a4 [label="APPROVE\nreason + collection\ninstructions", fillcolor="#e3f4ea", color="#0f6b3a"]; a5 [label="REJECT\nreason", fillcolor="#fde8e8", color="#a11d1d"];
+    a6 [label="Confirm collection\nitem → RETURNED\nother claims closed", fillcolor="#e3f4ea", color="#0f6b3a"];
+    a1->a2->a3; a3->a4; a3->a5; a4->a6; }
+  f2 -> o1 [style=dashed, label="listing\nsearchable"];
+  o3 -> a1 [label="claim"];
+  a4 -> o4 [style=dashed, label="instructions\nvisible"];
+  o5 -> a6;
+  {rank=same; f1; o1; a1;}
+}

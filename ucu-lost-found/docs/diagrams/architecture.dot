@@ -1,0 +1,17 @@
+digraph A {
+  graph [rankdir=LR, fontname="Helvetica", pad=0.3, nodesep=0.4, ranksep=0.6, bgcolor="white"];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#e4ecf8", color="#17365d"];
+  edge [fontname="Helvetica", fontsize=9, color="#4a5868"];
+  subgraph cluster_client { label="Browser (phone or computer)"; style="rounded,dashed"; color="#8796a8"; fontname="Helvetica";
+    ui [label="React SPA (Vite build)\nPages · Components\nclient-side validation"]; }
+  subgraph cluster_server { label="Node.js + Express (one web service)"; style="rounded,dashed"; color="#8796a8"; fontname="Helvetica";
+    mw [label="Middleware\nHelmet · cookie-parser\nloadUser (session)\nrate limit · multer"];
+    routes [label="Routes\n/auth · /reports · /me · /claims · /admin"];
+    guard [label="requireAuth / requireAdmin\nownership checks\nzod validation"];
+    static [label="Static React files"]; }
+  db [shape=cylinder, label="MySQL 8\nusers · sessions · reports\nreport_photos · claims\nadmin_actions", fillcolor="#fff1d6", color="#7a4a00"];
+  ui -> mw [label="HTTPS JSON / multipart\n+ httpOnly cookie"];
+  mw -> routes -> guard;
+  guard -> db [label="mysql2 pool\nparameterised SQL\ntransactions + row locks"];
+  static -> ui [label="HTML/JS/CSS", style=dashed];
+}

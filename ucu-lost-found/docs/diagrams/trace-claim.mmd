@@ -1,0 +1,21 @@
+sequenceDiagram
+  autonumber
+  actor S as Student (Okello)
+  participant UI as React ReportDetail.jsx<br/>ClaimSection
+  participant API as Express<br/>POST /api/reports/:id/claims
+  participant MW as loadUser + requireAuth<br/>(middleware/auth.js)
+  participant V as validate('claim')<br/>(validation.js)
+  participant DB as MySQL
+  S->>UI: Types evidence, clicks "Submit claim"
+  UI->>UI: validateClaim() — at least 20 chars
+  UI->>API: fetch POST {evidence} + httpOnly cookie
+  API->>MW: hash cookie token
+  MW->>DB: SELECT user FROM sessions JOIN users WHERE token_hash=? AND expires_at>NOW()
+  DB-->>MW: user row (or none → 401)
+  API->>V: zod schema check (400 + field messages if invalid)
+  API->>DB: BEGIN, SELECT report ... FOR UPDATE (row lock)
+  Note over API,DB: Rules: found item · not own report (403)<br/>not returned / approved (409) · no duplicate (409)
+  API->>DB: INSERT INTO claims (report_id, claimant_id, evidence)
+  API->>DB: COMMIT
+  API-->>UI: 201 {message, id}
+  UI-->>S: Success message + "Your claim: Pending review"

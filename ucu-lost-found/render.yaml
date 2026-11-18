@@ -1,0 +1,28 @@
+# Render Blueprint: one web service that serves both the API and the built React app.
+# The MySQL database is hosted separately (e.g. Aiven for MySQL free tier, Railway or TiDB Cloud).
+# Secrets (DB_PASSWORD etc.) are entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: ucu-lost-found
+    runtime: node
+    plan: free
+    buildCommand: npm run install:all && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: ucu_lost_found
+      - key: DB_SSL
+        value: "true"
+      - key: SESSION_HOURS
+        value: "8"

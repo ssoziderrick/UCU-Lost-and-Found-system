@@ -1,0 +1,18 @@
+digraph S {
+  graph [rankdir=LR, fontname="Helvetica", pad=0.3, bgcolor="white", nodesep=0.35];
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=9, color="#4a5868"];
+  subgraph cluster_item { label="Found item (report.status)"; fontname="Helvetica"; style=rounded; color="#8796a8";
+    open [fillcolor="#e3f4ea", label="open"]; await [fillcolor="#fff1d6", label="awaiting_collection"]; ret [fillcolor="#e4ecf8", label="returned"]; rem [fillcolor="#fde8e8", label="removed"]; }
+  subgraph cluster_claim { label="Claim (claims.status)"; fontname="Helvetica"; style=rounded; color="#8796a8";
+    pend [fillcolor="#fff1d6", label="pending"]; appr [fillcolor="#e3f4ea", label="approved"]; rej [fillcolor="#fde8e8", label="rejected"]; col [fillcolor="#e4ecf8", label="collected"]; }
+  open -> await [label="admin approves a claim"];
+  await -> open [label="approval cancelled"];
+  await -> ret [label="collection confirmed"];
+  open -> rem [label="admin removes"]; rem -> open [label="restore"];
+  pend -> appr [label="approve + reason\n+ collection instructions"];
+  pend -> rej [label="reject + reason"];
+  appr -> col [label="confirm return"];
+  appr -> rej [label="cancel approval"];
+  pend -> rej [label="auto: item returned", style=dashed];
+}
