@@ -2,7 +2,7 @@
 
 A responsive web application for Uganda Christian University students to report lost and found items, search listings, submit **private** ownership claims, and for an administrator to review claims and confirm returns.
 
-| Layer | Technology |
+| Layer | Technology 
 
 | Frontend | React 19, React Router 7, Vite |
 | Backend | Node.js 18+, Express 5 |
@@ -14,7 +14,7 @@ A responsive web application for Uganda Christian University students to report 
 
 ## Features
 
-- **Accounts:** register, log in, log out. Logout deletes the session on the server, so an old cookie stops working.
+- Accounts: register, log in, log out. Logout deletes the session on the server, so an old cookie stops working.
 - **Reports:** create and edit your own lost or found reports, with title, category, public description, date, campus location, optional photo.
 - **Private identifying details** on found items, visible only to the finder and the administrator.
 - **Search and filter** by keyword, category, campus location, date range, lost/found, and open/returned.
