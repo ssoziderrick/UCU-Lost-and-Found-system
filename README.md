@@ -16,7 +16,7 @@ A responsive web application for Uganda Christian University students to report 
 
 - Accounts: register, log in, log out. Logout deletes the session on the server, so an old cookie stops working.
 - Reports: create and edit your own lost or found reports, with title, category, public description, date, campus location, optional photo.
-- **Private identifying details** on found items, visible only to the finder and the administrator.
+- Private identifying details on found items, visible only to the finder and the administrator.
 - **Search and filter** by keyword, category, campus location, date range, lost/found, and open/returned.
 - **Claims:** a logged-in student explains privately why a found item is theirs. You cannot claim your own found item, claim twice, or claim a returned item.
 - **Admin review:** compare the claim with the finder's private details, then approve (with collection instructions) or reject, giving a reason.
