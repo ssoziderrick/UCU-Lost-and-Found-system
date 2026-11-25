@@ -30,7 +30,7 @@ export default function AppShell() {
   const isStudent = Boolean(user && !isAdmin);
 
   const handleLogout = async () => {
-    await logout(() => navigate('/', { replace: true, state: { flash: 'You have been logged out.' } }));
+    await logout(() => navigate('/', { replace: true, state: { flash: 'You have been signed out.' } }));
   };
 
   return (
@@ -69,8 +69,8 @@ export default function AppShell() {
                   </>
                 ) : (
                   <>
-                    <Button to="/login" variant="ghost">Log in</Button>
-                    <Button to="/register">Create account</Button>
+                    <Button to="/login" variant="ghost">Sign in</Button>
+                    <Button to="/activate">Activate account</Button>
                   </>
                 )}
               </div>
@@ -96,12 +96,12 @@ export default function AppShell() {
               {isAdmin ? (
                 <>
                   <Button to="/admin" variant="subtle">Admin console</Button>
-                  <Button variant="secondary" onClick={handleLogout}>Log out</Button>
+                  <Button variant="secondary" onClick={handleLogout}>Sign out</Button>
                 </>
               ) : (
                 <>
-                  <Button to="/login" variant="secondary">Log in</Button>
-                  <Button to="/register">Create account</Button>
+                  <Button to="/login" variant="secondary">Sign in</Button>
+                  <Button to="/activate">Activate account</Button>
                 </>
               )}
             </div>

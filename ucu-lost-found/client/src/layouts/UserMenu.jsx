@@ -35,11 +35,11 @@ export default function UserMenu({ user, onLogout, tone = 'light', align = 'righ
           align === 'right' ? 'right-0' : 'left-0', align === 'up' && 'bottom-full mb-2')}>
           <div className="border-b border-line px-3 pb-3 pt-2">
             <p className="font-semibold">{user.fullName}</p>
-            <p className="truncate text-sm text-muted">{user.role === 'admin' ? 'Administrator' : 'Student'} · {user.email}</p>
+            <p className="truncate text-sm text-muted">{user.role === 'admin' ? (user.adminRole?.name || 'Administrator') : 'Student'} · <span className="font-mono">{user.registrationNumber || user.staffId}</span></p>
           </div>
           <button type="button" onClick={onLogout}
             className="mt-1 flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-left font-medium hover:bg-mist">
-            <LogOut aria-hidden="true" className="size-4" /> Log out
+            <LogOut aria-hidden="true" className="size-4" /> Sign out
           </button>
         </div>
       )}

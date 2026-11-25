@@ -30,6 +30,7 @@ export const api = {
   get: (url) => request('GET', url),
   post: (url, body) => request('POST', url, body ?? {}),
   put: (url, body) => request('PUT', url, body),
+  patch: (url, body) => request('PATCH', url, body ?? {}),
 };
 
 /** Build a query string, skipping empty values. */

@@ -1,8 +1,8 @@
 // Administrator console shell: navy sidebar on desktop, slide-over drawer on phones and tablets.
-// Only sections that exist are listed; more are added as they are built (registry, matches, locations…).
+// Only sections that exist, and that the signed-in role may use, are listed.
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardList, ExternalLink, FolderOpen, LogOut, Menu, X } from 'lucide-react';
+import { ClipboardList, ExternalLink, FolderOpen, IdCard, LogOut, Menu, ScrollText, ShieldCheck, Users, X } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { Logo } from '../design/Logo';
 import { cx } from '../design/primitives';
@@ -13,14 +13,28 @@ const SECTIONS = [
   {
     heading: 'Cases',
     items: [
-      { to: '/admin?tab=claims', label: 'Claims queue', icon: ClipboardList, match: (p, q) => p.startsWith('/admin/claims') || (p === '/admin' && (q.get('tab') || 'claims') === 'claims') },
-      { to: '/admin?tab=reports', label: 'All reports', icon: FolderOpen, match: (p, q) => p === '/admin' && q.get('tab') === 'reports' },
+      { to: '/admin?tab=claims', label: 'Claims queue', icon: ClipboardList, permission: 'claims.review', match: (p, q) => p.startsWith('/admin/claims') || (p === '/admin' && (q.get('tab') || 'claims') === 'claims') },
+      { to: '/admin?tab=reports', label: 'All reports', icon: FolderOpen, permission: 'reports.moderate', match: (p, q) => p === '/admin' && q.get('tab') === 'reports' },
+    ],
+  },
+  {
+    heading: 'People',
+    items: [
+      { to: '/admin/students', label: 'Students', icon: Users, permission: 'students.manage', match: (p) => p === '/admin/students' },
+      { to: '/admin/registry', label: 'Student registry', icon: IdCard, permission: 'students.manage', match: (p) => p === '/admin/registry' },
+      { to: '/admin/admins', label: 'Administrators', icon: ShieldCheck, permission: 'admins.manage', match: (p) => p === '/admin/admins' },
+    ],
+  },
+  {
+    heading: 'Records',
+    items: [
+      { to: '/admin/audit', label: 'Audit log', icon: ScrollText, permission: 'audit.view', match: (p) => p === '/admin/audit' },
     ],
   },
 ];
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [drawer, setDrawer] = useState(false);
@@ -35,7 +49,7 @@ export default function AdminLayout() {
   }, [drawer]);
 
   const handleLogout = async () => {
-    await logout(() => navigate('/', { replace: true, state: { flash: 'You have been logged out.' } }));
+    await logout(() => navigate('/', { replace: true, state: { flash: 'You have been signed out.' } }));
   };
 
   const params = new URLSearchParams(location.search);
@@ -48,7 +62,7 @@ export default function AdminLayout() {
         <span className="rounded bg-white/10 px-1.5 py-0.5 text-[0.65rem] font-semibold tracking-wider text-slate-300">ADMIN</span>
       </div>
       <nav aria-label="Admin" className="flex flex-1 flex-col gap-1">
-        {SECTIONS.map((s) => (
+        {SECTIONS.map((s) => ({ ...s, items: s.items.filter((i) => can(i.permission)) })).filter((s) => s.items.length).map((s) => (
           <div key={s.heading} className="flex flex-col gap-0.5">
             <p className="px-3 pb-1 pt-3 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[#93A3C8]">{s.heading}</p>
             {s.items.map(({ to, label, icon: Icon, match }) => {
@@ -72,10 +86,10 @@ export default function AdminLayout() {
         <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-full bg-white/15 text-sm font-bold text-white">{initials(user.fullName)}</span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-white">{user.fullName}</p>
-          <p className="text-xs text-[#93A3C8]">Administrator</p>
+          <p className="text-xs text-[#93A3C8]">{user.adminRole?.name || 'Administrator'} · <span className="font-mono">{user.staffId}</span></p>
         </div>
         <button type="button" onClick={handleLogout} className="grid size-10 place-items-center rounded-md text-slate-300 hover:bg-white/10 hover:text-white">
-          <LogOut aria-hidden="true" className="size-4" /><span className="sr-only">Log out</span>
+          <LogOut aria-hidden="true" className="size-4" /><span className="sr-only">Sign out</span>
         </button>
       </div>
     </div>
@@ -108,7 +122,7 @@ export default function AdminLayout() {
           </button>
           <Logo size={22} />
         </header>
-        <main id="main" ref={mainRef} tabIndex={-1} className="legacy-page mx-auto w-full max-w-6xl flex-1 px-4 py-6 focus:outline-none sm:px-6 lg:py-8">
+        <main id="main" ref={mainRef} tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 focus:outline-none sm:px-6 lg:py-8">
           <Outlet />
         </main>
       </div>

@@ -30,7 +30,7 @@ const identifier = (label) => z.string({ error: `${label} is required.` })
   .pipe(z.string().min(1, `${label} is required.`).max(30, `${label} is too long.`));
 
 const registrationNumber = identifier('Registration number')
-  .pipe(z.string().regex(config.regNumberPattern, 'Enter your registration number as it appears on your student ID, e.g. S24B23/101.'));
+  .pipe(z.string().regex(config.regNumberPattern, 'That doesn’t look like a registration number. Use the format on the student ID, e.g. S24B23/101.'));
 
 const personName = z.string({ error: 'Full name is required.' }).trim()
   .min(2, 'Full name must be at least 2 characters.').max(100, 'Full name must be 100 characters or fewer.')

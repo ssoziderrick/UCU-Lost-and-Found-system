@@ -2,7 +2,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { SearchX } from 'lucide-react';
 import AppShell from './layouts/AppShell';
 import AdminLayout from './layouts/AdminLayout';
-import { RequireAdmin, RequireAuth, RequireStudent } from './components/Guards';
+import { GuestOnly, RequireAdmin, RequireAuth, RequirePermission, RequireStudent } from './components/Guards';
 import { Loading, usePageTitle } from './components/ui';
 import { useAuth } from './AuthContext';
 import { Button, EmptyState } from './design/primitives';
@@ -11,7 +11,13 @@ import Dashboard from './pages/Dashboard';
 import Browse from './pages/Browse';
 import ReportDetail from './pages/ReportDetail';
 import ReportForm from './pages/ReportForm';
-import { Login, Register } from './pages/Auth';
+import Login from './features/auth/Login';
+import Activate from './features/auth/Activate';
+import Recover from './features/auth/Recover';
+import Students from './features/admin/Students';
+import Registry from './features/admin/Registry';
+import Admins from './features/admin/Admins';
+import AuditLog from './features/admin/AuditLog';
 import { ClaimDetail, MyClaims, MyReports } from './pages/Mine';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminClaim from './pages/admin/AdminClaim';
@@ -20,6 +26,9 @@ import AdminClaim from './pages/admin/AdminClaim';
 function LegacyFrame() {
   return <div className="legacy-page mx-auto max-w-6xl px-4 py-6 sm:px-6 md:py-8"><Outlet /></div>;
 }
+
+/** Same idea inside the admin console, for the two admin pages not yet rebuilt. */
+const LegacyAdmin = ({ children }) => <div className="legacy-page">{children}</div>;
 
 /** Visitors see the landing page; signed-in users go straight to their home. */
 function Home() {
@@ -46,10 +55,14 @@ export default function App() {
       <Route element={<AppShell />}>
         <Route index element={<Home />} />
         <Route path="dashboard" element={<RequireStudent><Dashboard /></RequireStudent>} />
+        <Route path="login" element={<GuestOnly><Login /></GuestOnly>} />
+        <Route path="activate" element={<GuestOnly><Activate /></GuestOnly>} />
+        <Route path="register" element={<Navigate to="/activate" replace />} />
+        <Route path="forgot-password" element={<Recover />} />
+        <Route path="reset-password" element={<Recover />} />
+        <Route path="set-password" element={<Recover />} />
         <Route element={<LegacyFrame />}>
           <Route path="items" element={<Browse />} />
-          <Route path="login" element={<Login />} />
-          <Route path="register" element={<Register />} />
           <Route path="reports/new" element={<RequireAuth><ReportForm key="new" /></RequireAuth>} />
           <Route path="reports/:id" element={<ReportDetail />} />
           <Route path="reports/:id/edit" element={<RequireAuth><ReportForm key="edit" /></RequireAuth>} />
@@ -60,8 +73,12 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="claims/:id" element={<AdminClaim />} />
+        <Route index element={<LegacyAdmin><AdminDashboard /></LegacyAdmin>} />
+        <Route path="claims/:id" element={<RequirePermission permission="claims.review"><LegacyAdmin><AdminClaim /></LegacyAdmin></RequirePermission>} />
+        <Route path="students" element={<RequirePermission permission="students.manage"><Students /></RequirePermission>} />
+        <Route path="registry" element={<RequirePermission permission="students.manage"><Registry /></RequirePermission>} />
+        <Route path="admins" element={<RequirePermission permission="admins.manage"><Admins /></RequirePermission>} />
+        <Route path="audit" element={<RequirePermission permission="audit.view"><AuditLog /></RequirePermission>} />
       </Route>
     </Routes>
   );

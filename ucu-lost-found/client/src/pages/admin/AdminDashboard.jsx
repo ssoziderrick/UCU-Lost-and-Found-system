@@ -2,19 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { api, qs } from '../../api';
 import { Alert, EmptyState, Field, Loading, StatusBadge, TypeBadge, formatDate, usePageTitle } from '../../components/ui';
+import { useAuth } from '../../AuthContext';
 
 export default function AdminDashboard() {
   usePageTitle('Administrator dashboard');
   const location = useLocation();
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') || 'claims';
+  const { can } = useAuth();
+  const tabs = [['claims', 'Claims to review', 'claims.review'], ['reports', 'All reports', 'reports.moderate']].filter((t) => can(t[2]));
+  const tab = tabs.some((t) => t[0] === params.get('tab')) ? params.get('tab') : tabs[0]?.[0];
   const [stats, setStats] = useState(null);
   const [flash, setFlash] = useState(location.state?.flash || '');
 
-  const loadStats = useCallback(() => { api.get('/api/admin/stats').then(setStats).catch(() => {}); }, []);
+  const loadStats = useCallback(() => { if (can('stats.view')) api.get('/api/admin/stats').then(setStats).catch(() => {}); }, [can]);
   useEffect(() => { loadStats(); }, [loadStats]);
 
-  const tabs = [['claims', 'Claims to review'], ['reports', 'All reports']];
   return (
     <>
       <h1>Administrator dashboard</h1>
@@ -29,13 +31,15 @@ export default function AdminDashboard() {
           <button key={key} type="button" role="tab" id={`tab-${key}`} aria-selected={tab === key} aria-controls={`panel-${key}`}
             tabIndex={tab === key ? 0 : -1} className={`tab${tab === key ? ' active' : ''}`}
             onClick={() => setParams({ tab: key })}
-            onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const next = tab === 'claims' ? 'reports' : 'claims'; setParams({ tab: next }); document.getElementById(`tab-${next}`)?.focus(); } }}>
+            onKeyDown={(e) => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { const next = tabs[(tabs.findIndex((t) => t[0] === tab) + 1) % tabs.length][0]; setParams({ tab: next }); document.getElementById(`tab-${next}`)?.focus(); } }}>
             {label}
           </button>
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === 'claims' ? <ClaimsQueue reportId={params.get('report')} /> : <ReportsAdmin onChange={loadStats} setFlash={setFlash} />}
+        {tab === 'claims' && <ClaimsQueue reportId={params.get('report')} />}
+        {tab === 'reports' && <ReportsAdmin onChange={loadStats} setFlash={setFlash} />}
+        {!tab && <EmptyState title="Nothing to show for your role"><p>Use the menu to open the sections your role allows.</p></EmptyState>}
       </div>
     </>
   );

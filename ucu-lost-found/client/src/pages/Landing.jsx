@@ -226,11 +226,11 @@ export default function Landing() {
         <div className="mx-auto flex max-w-6xl flex-col items-start gap-5 px-4 py-12 sm:px-6 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-2">
             <h2 id="cta-title" className="text-2xl font-bold tracking-tight text-white">One campus. One community. Everything found.</h2>
-            <p className="text-brand-100">Create an account to report items and claim what’s yours.</p>
+            <p className="text-brand-100">Activate your account with your registration number to report items and claim what’s yours.</p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button to="/register" variant="inverse" size="lg" icon={IdCard}>Create an account</Button>
-            <Button to="/login" variant="ghost" size="lg" className="text-white hover:bg-white/10 hover:text-white">Log in</Button>
+            <Button to="/activate" variant="inverse" size="lg" icon={IdCard}>Activate your account</Button>
+            <Button to="/login" variant="ghost" size="lg" className="text-white hover:bg-white/10 hover:text-white">Sign in</Button>
           </div>
         </div>
       </section>

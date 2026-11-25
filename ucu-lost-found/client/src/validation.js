@@ -4,23 +4,49 @@
 const today = () => new Date().toISOString().slice(0, 10);
 const len = (v) => (v || '').trim().length;
 
-export function validateRegister(f) {
+/** Registration numbers and staff IDs: trimmed, upper-case, inner spaces removed (same as the server). */
+export const normaliseId = (v) => String(v ?? '').trim().toUpperCase().replace(/\s+/g, '');
+
+/** Mirrors server/src/utils/passwordPolicy.js except the common-password list, which only the server checks. */
+export function passwordProblem(password, identifiers = []) {
+  const pw = password || '';
+  if (pw.length < 10) return 'Password must be at least 10 characters long.';
+  if (new TextEncoder().encode(pw).length > 72) return 'Password must be 72 characters or fewer.';
+  if (!/[A-Za-z]/.test(pw)) return 'Password must include at least one letter.';
+  if (!/\d/.test(pw)) return 'Password must include at least one number.';
+  const squashed = pw.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (identifiers.some((id) => { const s = String(id || '').toLowerCase().replace(/[^a-z0-9]/g, ''); return s.length >= 4 && squashed.includes(s); })) {
+    return 'Password must not contain your registration number or staff ID.';
+  }
+  return null;
+}
+
+export function validateLogin(f, kind = 'student') {
   const e = {};
-  if (len(f.fullName) < 2) e.fullName = 'Full name must be at least 2 characters.';
-  else if (!/^[A-Za-z][A-Za-z .'-]*$/.test(f.fullName.trim())) e.fullName = 'Full name may only contain letters, spaces, apostrophes, dots and hyphens.';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((f.email || '').trim())) e.email = 'Enter a valid email address, for example name@students.ucu.ac.ug.';
-  if (f.studentNumber && !/^[A-Za-z0-9/-]{4,20}$/.test(f.studentNumber.trim())) e.studentNumber = 'Student number should be 4–20 letters, digits, "/" or "-", e.g. S23B23/045.';
-  if (f.phone && !/^(\+2567|07)\d{8}$/.test(f.phone.trim())) e.phone = 'Enter a Ugandan mobile number like 0772123456 or +256772123456.';
-  if ((f.password || '').length < 8) e.password = 'Password must be at least 8 characters long.';
-  else if (!/[A-Za-z]/.test(f.password) || !/\d/.test(f.password)) e.password = 'Password must include at least one letter and one number.';
-  if (f.confirmPassword !== f.password) e.confirmPassword = 'Passwords do not match — type the same password in both boxes.';
+  if (kind === 'student' && !normaliseId(f.registrationNumber)) e.registrationNumber = 'Enter your registration number.';
+  if (kind === 'admin' && !normaliseId(f.staffId)) e.staffId = 'Enter your staff ID.';
+  if (!f.password) e.password = 'Enter your password.';
   return e;
 }
 
-export function validateLogin(f) {
+export function validateActivationStart(f) {
   const e = {};
-  if (!len(f.email)) e.email = 'Email is required.';
-  if (!f.password) e.password = 'Password is required.';
+  if (!normaliseId(f.registrationNumber)) e.registrationNumber = 'Enter your registration number.';
+  if (len(f.fullName) < 2) e.fullName = 'Enter your full name as it appears on your student ID.';
+  else if (!/^[\p{L}][\p{L} ,.'-]*$/u.test(f.fullName.trim())) e.fullName = 'Full name may only contain letters, spaces, commas, apostrophes, dots and hyphens.';
+  return e;
+}
+
+export function validateCode(code) {
+  return /^\d{6}$/.test((code || '').trim()) ? {} : { code: 'Enter the 6-digit code from the email.' };
+}
+
+export function validateNewPassword(f, identifiers = []) {
+  const e = {};
+  const problem = passwordProblem(f.password, identifiers);
+  if (problem) e.password = problem;
+  if (!f.confirmPassword) e.confirmPassword = 'Type the password again to confirm it.';
+  else if (f.confirmPassword !== f.password) e.confirmPassword = 'The two passwords don’t match. Type the same password twice.';
   return e;
 }
 

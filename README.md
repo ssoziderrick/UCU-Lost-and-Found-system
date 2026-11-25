@@ -63,6 +63,11 @@ cp server/.env.example server/.env
 | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | MySQL connection |
 | `DB_SSL` | `true` for hosted providers that require TLS |
 | `SESSION_HOURS` | How long a login lasts (default 8) |
+| `APP_URL` | Public address of the web app, used in emailed links |
+| `APP_SECRET` | Long random value that keys one-time codes (required in production) |
+| `MAIL_TRANSPORT` | `log` (development: prints emails and keeps them in `email_outbox`) or `smtp` (production) |
+| `MAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD` | Outgoing email for activation codes, password resets and admin invitations |
+| `REG_NUMBER_PATTERN` | Accepted registration-number format (default allows letters, digits, `/` and `-`) |
 
 `server/.env` is git-ignored. **Never commit real passwords.**
 
@@ -84,7 +89,15 @@ npm run db:migrate
 
 Each applied migration is recorded in a `schema_migrations` table with a checksum. Never edit a migration that has already been applied: add the next numbered file instead (for example `002_student_registry.sql`).
 
-The demo account emails are listed in `database/seed.sql`. Their **passwords are not in this repository**. They are submitted privately on Moodle.
+**Signing in.** Students sign in with their **registration number** (e.g. `S24B23/101`); administrators use the **Staff** tab with their **staff ID** (the seeded super admin is `STAFF-0001`). Demo passwords are **not in this repository**.
+
+**Student accounts** are activated, not created freely: a student enters their registration number and name, and if they are an enrolled student in the **student registry** a 6-digit code goes to their university email. Administrators keep the registry current by importing the registrar's CSV export (*Admin → Student registry*). In development, emails are printed in the API terminal and stored in the `email_outbox` table, so no mail server is needed.
+
+**First administrator on a new install** (no demo data): run the command below. It prints a one-time link to set the password, so no password is typed on the command line. Further administrators are invited from *Admin → Administrators*.
+
+```bash
+npm run admin:create -- --staff-id STAFF-0001 --name "Full Name" --email name@ucu.ac.ug
+```
 
 ## 4. Run
 

@@ -53,7 +53,7 @@ const BADGE_TONES = {
 
 export function Badge({ tone = 'neutral', className, children }) {
   return (
-    <span className={cx('inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold leading-none', BADGE_TONES[tone], className)}>
+    <span className={cx('inline-flex items-center whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold leading-none', BADGE_TONES[tone], className)}>
       {children}
     </span>
   );

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../api';
+import { useAuth } from '../../AuthContext';
 import { validateDecision } from '../../validation';
 import { Alert, ErrorSummary, Field, Loading, StatusBadge, formatDate, usePageTitle } from '../../components/ui';
 
@@ -9,6 +10,7 @@ const DEFAULT_INSTRUCTIONS = 'Collect from the Lost & Found desk, Dean of Studen
 export default function AdminClaim() {
   const { id } = useParams();
   usePageTitle('Review claim');
+  const { can } = useAuth();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [flash, setFlash] = useState('');
@@ -56,7 +58,7 @@ export default function AdminClaim() {
       <div className="compare">
         <section className="card section" aria-labelledby="ev-title">
           <h2 id="ev-title" className="h3">Claimant's evidence</h2>
-          <p className="meta">{c.claimantName} · {c.claimantStudentNumber || 'no student no.'} · {c.claimantEmail}{c.claimantPhone ? ` · ${c.claimantPhone}` : ''}</p>
+          <p className="meta">{c.claimantName} · {c.claimantRegistrationNumber || 'no registration no.'} · {c.claimantEmail}{c.claimantPhone ? ` · ${c.claimantPhone}` : ''}</p>
           <p className="meta">Submitted {formatDate(c.createdAt)}</p>
           <blockquote className="prewrap">{c.evidence}</blockquote>
         </section>
@@ -90,7 +92,8 @@ export default function AdminClaim() {
 
       <section className="card section" aria-labelledby="act-title">
         <h2 id="act-title" className="h3">Actions</h2>
-        {c.status === 'pending' && (
+        {!can('claims.decide') && ['pending', 'approved'].includes(c.status) && <p>Your role can read claims but not decide them.</p>}
+        {c.status === 'pending' && can('claims.decide') && (
           <>
             {otherApproved && <Alert type="warning">Another claim on this item is already approved or collected, so this claim cannot be approved. You may reject it.</Alert>}
             <div className="btn-row">
@@ -103,8 +106,8 @@ export default function AdminClaim() {
           <>
             <p>The claimant has been told where to collect the item. Only confirm the return once they have physically collected it and shown ID.</p>
             <div className="btn-row">
-              <button type="button" className="btn btn-success" disabled={busy} onClick={confirmReturn}>Confirm item collected</button>
-              <button type="button" className="btn btn-ghost" onClick={() => { setMode('revoke'); setErrors({}); }}>Cancel approval</button>
+              {can('returns.confirm') && <button type="button" className="btn btn-success" disabled={busy} onClick={confirmReturn}>Confirm item collected</button>}
+              {can('claims.decide') && <button type="button" className="btn btn-ghost" onClick={() => { setMode('revoke'); setErrors({}); }}>Cancel approval</button>}
             </div>
           </>
         )}

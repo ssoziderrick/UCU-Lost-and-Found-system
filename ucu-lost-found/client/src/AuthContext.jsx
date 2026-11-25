@@ -15,17 +15,19 @@ export function AuthProvider({ children }) {
       .finally(() => setChecking(false));
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    const d = await api.post('/api/auth/login', { email, password });
-    setUser(d.user);
+  /**
+   * kind "student": { registrationNumber, password, remember }; kind "admin": { staffId, password }.
+   * `then(response)` (e.g. navigate with a welcome message) runs in the same transition as setting the user,
+   * so guest-only pages don't redirect first and drop the message.
+   */
+  const login = useCallback(async (kind, body, then) => {
+    const d = await api.post(kind === 'admin' ? '/api/auth/admin/login' : '/api/auth/login', body);
+    startTransition(() => { setUser(d.user); then?.(d); });
     return d;
   }, []);
 
-  const register = useCallback(async (form) => {
-    const d = await api.post('/api/auth/register', form);
-    setUser(d.user);
-    return d;
-  }, []);
+  /** For flows that sign the user in themselves (account activation). Same `then` rule as login. */
+  const signedIn = useCallback((u, then) => startTransition(() => { setUser(u); then?.(); }), []);
 
   /**
    * Ends the session. `then` (e.g. a navigate call) runs in the same transition as clearing the user,
@@ -37,8 +39,11 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const value = useMemo(() => ({ user, checking, login, register, logout, isAdmin: user?.role === 'admin' }),
-    [user, checking, login, register, logout]);
+  const can = useCallback((permission) => Boolean(user?.permissions?.includes(permission)), [user]);
+
+  const value = useMemo(() => ({
+    user, checking, login, signedIn, logout, can, isAdmin: user?.role === 'admin',
+  }), [user, checking, login, signedIn, logout, can]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

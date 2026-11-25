@@ -96,7 +96,7 @@ router.post('/admin/login', loginIpLimiter, loginIdLimiter, async (req, res) => 
 
 router.post('/logout', async (req, res) => {
   await destroySession(req, res);
-  res.json({ message: 'You have been logged out.' });
+  res.json({ message: 'You have been signed out.' });
 });
 
 // Returns the current user, or null when logged out (200 either way, so the client can check quietly).
