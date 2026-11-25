@@ -68,20 +68,21 @@ cp server/.env.example server/.env
 
 ## 3. Database setup
 
-Either run the setup script (creates the database, tables and fictional sample data):
+The schema is built from numbered migration files in `database/migrations/`.
+
+**First time, or to start again with clean sample data** (deletes everything in `DB_NAME`):
 
 ```bash
 npm run db:setup
 ```
 
-or run the SQL files directly:
+**Existing database** (applies only the migrations it hasn't had yet, keeps your data):
 
 ```bash
-mysql -u lf_app -p < database/schema.sql
-mysql -u lf_app -p ucu_lost_found < database/seed.sql
+npm run db:migrate
 ```
 
-> ⚠️ Both reset the database. `schema.sql` drops existing tables first.
+Each applied migration is recorded in a `schema_migrations` table with a checksum. Never edit a migration that has already been applied: add the next numbered file instead (for example `002_student_registry.sql`).
 
 The demo account emails are listed in `database/seed.sql`. Their **passwords are not in this repository**. They are submitted privately on Moodle.
 
@@ -123,12 +124,7 @@ Manual test cases and results are in [`docs/TEST_RESULTS.md`](docs/TEST_RESULTS.
 ## Deployment (Render + hosted MySQL)
 
 1. Create a MySQL database on a hosted provider (for example Aiven for MySQL free tier, Railway, or TiDB Cloud Serverless) and note the host, port, user, password and database name.
-2. Load the schema and sample data into it from your computer:
-   ```bash
-   mysql -h <host> -P <port> -u <user> -p --ssl-mode=REQUIRED < database/schema.sql
-   mysql -h <host> -P <port> -u <user> -p --ssl-mode=REQUIRED ucu_lost_found < database/seed.sql
-   ```
-   (If the provider gives you a fixed database name such as `defaultdb`, replace `ucu_lost_found` in both SQL files' `CREATE DATABASE`/`USE` lines, or set `DB_NAME` to it and use `npm run db:setup` with that `.env`.)
+2. Create the tables from your computer: put the hosted database's details in `server/.env` (with `DB_SSL=true`) and run `npm run db:migrate`. Add `npm run db:setup` only if you want the fictional sample data, and only on an empty database, because it deletes everything first.
 3. Push this repository to GitHub. On https://render.com choose **New → Blueprint** and select the repo; `render.yaml` defines the service.
 4. In the Render dashboard, enter `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD` (and `DB_NAME` if different). Deploy.
 5. Visit `https://<your-service>.onrender.com/api/health`. It should return `{"ok":true}`.
@@ -153,9 +149,9 @@ ucu-lost-found/
 │   │   ├── middleware/     auth.js (sessions, requireAuth, requireAdmin)
 │   │   ├── validation.js   zod schemas (authoritative validation)
 │   │   └── app.js          Express app, error handler, static client
-│   ├── scripts/setup-db.js
+│   ├── scripts/            migrate.js, setup-db.js
 │   └── tests/api.test.js
-├── database/               schema.sql, seed.sql
+├── database/               migrations/ (schema), seed.sql (fictional data)
 ├── docs/                   design brief, test results, screenshots, report, slides
 ├── tests/e2e/              Playwright walkthrough
 └── render.yaml             deployment blueprint

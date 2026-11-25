@@ -1,23 +1,10 @@
 -- =====================================================================
--- UCU Campus Lost-and-Found System — database schema
+-- 001_baseline — the v1 schema (UCU Campus Lost-and-Found), frozen as the
+-- starting point for v2 (UCU Findora). Never edit an applied migration:
+-- add a new numbered file instead. The runner refuses to continue if an
+-- applied file's checksum changes.
 -- Target: MySQL 8.0+ (also tested on MariaDB 10.11)
--- Usage:  mysql -u <user> -p < database/schema.sql
 -- =====================================================================
-
-CREATE DATABASE IF NOT EXISTS ucu_lost_found
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE ucu_lost_found;
-
-SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS admin_actions;
-DROP TABLE IF EXISTS claims;
-DROP TABLE IF EXISTS report_photos;
-DROP TABLE IF EXISTS reports;
-DROP TABLE IF EXISTS sessions;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS categories;
-DROP TABLE IF EXISTS locations;
-SET FOREIGN_KEY_CHECKS = 1;
 
 -- ---------------------------------------------------------------------
 -- Lookup tables

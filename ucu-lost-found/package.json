@@ -5,10 +5,14 @@
   "description": "UCU Campus Lost-and-Found System (React + Express + MySQL)",
   "scripts": {
     "install:all": "npm --prefix server install && npm --prefix client install",
+    "dev": "npm --prefix server run dev",
     "build": "npm --prefix client run build",
     "start": "npm --prefix server start",
+    "db:migrate": "npm --prefix server run db:migrate",
     "db:setup": "npm --prefix server run db:setup",
     "test": "npm --prefix server test && npm --prefix client test"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }
