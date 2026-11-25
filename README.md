@@ -1,7 +1,59 @@
 # UCU Campus Lost & Found
 
 A responsive web application for Uganda Christian University students to report lost and found items, search listings, submit **private** ownership claims, and for an administrator to review claims and confirm returns.
+## 4. Run the Application
 
+The application can be run in development mode using two separate terminals or in production mode using one server.
+
+### Development Mode (Recommended)
+
+First, make sure MySQL is running and that the environment variables have been configured in the root `.env` file.
+
+**Terminal 1: Start the Backend Server**
+
+Open PowerShell in the main `ucu-lost-found` project directory and run:
+
+```powershell
+cd server
+npm start
+```
+
+The backend API will run on:
+
+`http://localhost:4000`
+
+**Terminal 2: Start the Frontend Client**
+
+Open a second PowerShell terminal in the main `ucu-lost-found` project directory and run:
+
+```powershell
+cd client
+npm run dev
+```
+
+The React frontend will normally run on:
+
+`http://localhost:5173`
+
+Open the frontend address in your browser to access the application. The frontend communicates with the backend through the `/api` proxy.
+
+### Production Mode
+
+To build the React frontend and serve the entire application through the Express backend, return to the main `ucu-lost-found` project directory and run:
+
+```powershell
+npm run build
+$env:NODE_ENV="production"
+npm start
+```
+
+The application will be available at:
+
+`http://localhost:4000`
+
+### Stopping the Application
+
+To stop either development server, press `Ctrl + C` in its terminal.
 | Layer | Technology 
 
 | Frontend | React 19, React Router 7, Vite |

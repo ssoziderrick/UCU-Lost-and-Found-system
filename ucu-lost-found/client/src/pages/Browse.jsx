@@ -17,6 +17,9 @@ export default function Browse() {
   const navigate = useNavigate();
   const [flash, setFlash] = useState(location.state?.flash || '');
   const [form, setForm] = useState(() => Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ''])));
+  useEffect(() => {
+  setForm(Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ''])));
+}, [params]);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const page = Number(params.get('page')) || 1;
