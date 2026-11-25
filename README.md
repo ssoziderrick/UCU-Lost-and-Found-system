@@ -23,7 +23,7 @@ A responsive web application for Uganda Christian University students to report 
 - **Confirmed return:** an item is marked *returned* only after collection is confirmed. Only one approved claim per item is possible, and this is enforced by a database unique index too.
 - Works on phones and desktops, with full keyboard navigation, visible focus, labelled forms and clear loading, empty, success and error messages.
 
----
+
 
 ## Prerequisites
 
