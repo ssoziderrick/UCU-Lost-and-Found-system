@@ -103,7 +103,9 @@ CREATE TABLE claims (
   approved_lock            INT UNSIGNED
                            GENERATED ALWAYS AS (CASE WHEN status IN ('approved','collected')
                                                      THEN report_id ELSE NULL END) STORED,
-  CONSTRAINT fk_claims_report   FOREIGN KEY (report_id)   REFERENCES reports(id) ON DELETE CASCADE,
+  -- No ON DELETE CASCADE here: MySQL 8 forbids CASCADE on a column that feeds a stored
+  -- generated column (approved_lock). Reports are never hard-deleted (status = 'removed').
+  CONSTRAINT fk_claims_report   FOREIGN KEY (report_id)   REFERENCES reports(id),
   CONSTRAINT fk_claims_claimant FOREIGN KEY (claimant_id) REFERENCES users(id),
   CONSTRAINT fk_claims_reviewer FOREIGN KEY (reviewed_by) REFERENCES users(id),
   UNIQUE KEY uq_one_claim_per_student (report_id, claimant_id),

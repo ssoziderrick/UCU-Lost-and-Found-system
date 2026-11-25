@@ -1,5 +1,7 @@
 // Central configuration. Values come from environment variables (.env in development).
-require('dotenv').config({ quiet: true });
+// Load server/.env by path, so it is found whichever folder the process is started from.
+// Variables already set in the environment (e.g. by the host) take precedence.
+require('dotenv').config({ path: require('path').join(__dirname, '..', '.env'), quiet: true });
 
 const isTest = process.env.NODE_ENV === 'test';
 
