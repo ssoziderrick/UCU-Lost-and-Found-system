@@ -1,7 +1,7 @@
 // Listing card for a lost or found report. Uses only public fields from the API.
 import { Link } from 'react-router-dom';
 import {
-  Backpack, BookOpen, CalendarDays, FileText, Gem, IdCard, KeyRound, MapPin, Milk, Package, Shirt, Smartphone,
+  Backpack, BookOpen, Calculator, CalendarDays, FileText, Gem, Glasses, IdCard, KeyRound, Laptop, MapPin, Milk, Package, Shirt, Smartphone, Umbrella,
 } from 'lucide-react';
 import { StatusBadge, TypeBadge, cx } from './primitives';
 import { formatDate } from '../components/ui';
@@ -16,6 +16,10 @@ const CATEGORY_ICONS = {
   'Jewellery & Accessories': Gem,
   'Water Bottles & Flasks': Milk,
   Documents: FileText,
+  'Laptops & Chargers': Laptop,
+  'Calculators & Academic Equipment': Calculator,
+  Umbrellas: Umbrella,
+  Eyewear: Glasses,
 };
 
 export const categoryIcon = (name) => CATEGORY_ICONS[name] || Package;
@@ -30,12 +34,15 @@ export default function ItemCard({ item, headingLevel: H = 'h3' }) {
       done && 'opacity-80',
     )}>
       <div className="grid aspect-[16/10] place-items-center overflow-hidden bg-mist">
-        {item.hasPhoto
-          ? <img src={`/api/reports/${item.id}/photo`} alt="" loading="lazy" className="size-full object-cover" />
+        {item.coverImage
+          ? <img src={item.coverImage.url} alt="" loading="lazy" className="size-full object-cover" />
           : <Icon aria-hidden="true" className="size-10 text-muted/70" strokeWidth={1.5} />}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <div className="flex flex-wrap gap-1.5"><TypeBadge type={item.type} /><StatusBadge status={item.status} /></div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <TypeBadge type={item.type} /><StatusBadge status={item.status} />
+          {item.refCode && <span className="ml-auto font-mono text-[0.7rem] text-muted">{item.refCode}</span>}
+        </div>
         <H className="text-base font-bold leading-snug">
           {/* The link covers the whole card; the ::after keeps one tab stop per card. */}
           <Link to={`/reports/${item.id}`} className="text-ink no-underline after:absolute after:inset-0 hover:text-brand-700">

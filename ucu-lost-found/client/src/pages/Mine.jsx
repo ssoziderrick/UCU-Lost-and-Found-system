@@ -4,50 +4,6 @@ import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import { Alert, EmptyState, Loading, StatusBadge, TypeBadge, formatDate, usePageTitle } from '../components/ui';
 
-export function MyReports() {
-  usePageTitle('My reports');
-  const { isAdmin } = useAuth();
-  const [items, setItems] = useState(null);
-  const [error, setError] = useState('');
-  useEffect(() => { api.get('/api/me/reports').then((d) => setItems(d.items)).catch((e) => setError(e.message)); }, []);
-
-  return (
-    <>
-      <div className="page-head">
-        <h1>My reports</h1>
-        {!isAdmin && <Link className="btn btn-primary" to="/reports/new">Report an item</Link>}
-      </div>
-      <Alert type="error">{error}</Alert>
-      {!items && !error && <Loading label="Loading your reports…" />}
-      {items && items.length === 0 && (
-        <EmptyState title="You haven't reported anything yet">
-          <p>Lost or found something? <Link to="/reports/new">Create a report</Link>.</p>
-        </EmptyState>
-      )}
-      {items && items.length > 0 && (
-        <div className="table-wrap">
-          <table className="table">
-            <caption className="sr-only">Your lost and found reports</caption>
-            <thead><tr><th scope="col">Item</th><th scope="col">Type</th><th scope="col">Date</th><th scope="col">Location</th><th scope="col">Status</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
-            <tbody>
-              {items.map((r) => (
-                <tr key={r.id}>
-                  <th scope="row"><Link to={`/reports/${r.id}`}>{r.title}</Link><div className="meta">{r.category}</div></th>
-                  <td data-label="Type"><TypeBadge type={r.type} /></td>
-                  <td data-label="Date">{formatDate(r.eventDate)}</td>
-                  <td data-label="Location">{r.location}</td>
-                  <td data-label="Status"><StatusBadge status={r.status} /></td>
-                  <td>{r.status === 'open' && <Link to={`/reports/${r.id}/edit`} aria-label={`Edit ${r.title}`}>Edit</Link>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </>
-  );
-}
-
 export function MyClaims() {
   usePageTitle('My claims');
   const [items, setItems] = useState(null);

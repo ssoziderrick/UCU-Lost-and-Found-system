@@ -24,8 +24,11 @@ describe('client validation', () => {
     expect(validateNewPassword({ password: 'Campus-Return-2026', confirmPassword: 'Campus-Return-2026' })).toEqual({});
   });
   test('report: future date, missing fields and oversized photo', () => {
-    const e = validateReport({ type: '', title: 'a', description: '', eventDate: '2999-01-01', photo: { type: 'image/png', size: 5e6 } });
-    expect(Object.keys(e)).toEqual(expect.arrayContaining(['type', 'title', 'categoryId', 'description', 'eventDate', 'locationId', 'photo']));
+    const e = validateReport({ type: '', title: 'a', description: '', eventDate: '2999-01-01', photos: [{ name: 'big.png', type: 'image/png', size: 6e6 }] });
+    expect(Object.keys(e)).toEqual(expect.arrayContaining(['type', 'title', 'categoryId', 'description', 'eventDate', 'locationId', 'photos']));
+    expect(e.photos).toMatch(/big\.png.*5 MB/);
+    expect(validateReport({ photos: Array(3).fill({ name: 'a.png', type: 'image/png', size: 10 }), existingPhotoCount: 2 }).photos).toMatch(/at most 4/);
+    expect(validateReport({ photos: [{ name: 'x.gif', type: 'image/gif', size: 10 }] }).photos).toMatch(/x\.gif/);
   });
   test('claim: evidence must be at least 20 characters', () => {
     expect(validateClaim({ evidence: 'mine' }).evidence).toBeDefined();

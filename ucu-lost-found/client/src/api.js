@@ -26,7 +26,30 @@ async function request(method, url, body) {
   return data;
 }
 
+/**
+ * Multipart upload with progress (fetch can't report upload progress). onProgress receives 0–1.
+ * Resolves with the parsed JSON, rejects with ApiError like the other calls.
+ */
+function upload(method, url, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open(method, url);
+    xhr.withCredentials = true;
+    xhr.responseType = 'json';
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.(e.loaded / e.total); };
+    xhr.onload = () => {
+      const data = xhr.response || {};
+      if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+      else reject(new ApiError(xhr.status, data.error || `Request failed (${xhr.status}).`, data.fields));
+    };
+    xhr.onerror = () => reject(new ApiError(0, 'Cannot reach the server. Check your internet connection and try again.'));
+    xhr.send(formData);
+  });
+}
+
 export const api = {
+  upload,
+  delete: (url) => request('DELETE', url),
   get: (url) => request('GET', url),
   post: (url, body) => request('POST', url, body ?? {}),
   put: (url, body) => request('PUT', url, body),

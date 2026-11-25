@@ -8,9 +8,12 @@ import { useAuth } from './AuthContext';
 import { Button, EmptyState } from './design/primitives';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
-import Browse from './pages/Browse';
-import ReportDetail from './pages/ReportDetail';
-import ReportForm from './pages/ReportForm';
+import Browse from './features/reports/Browse';
+import ReportDetail from './features/reports/ReportDetail';
+import ReportForm from './features/reports/ReportForm';
+import MyReports from './features/reports/MyReports';
+import Locations from './features/admin/Locations';
+import Categories from './features/admin/Categories';
 import Login from './features/auth/Login';
 import Activate from './features/auth/Activate';
 import Recover from './features/auth/Recover';
@@ -18,7 +21,7 @@ import Students from './features/admin/Students';
 import Registry from './features/admin/Registry';
 import Admins from './features/admin/Admins';
 import AuditLog from './features/admin/AuditLog';
-import { ClaimDetail, MyClaims, MyReports } from './pages/Mine';
+import { ClaimDetail, MyClaims } from './pages/Mine';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminClaim from './pages/admin/AdminClaim';
 
@@ -61,12 +64,12 @@ export default function App() {
         <Route path="forgot-password" element={<Recover />} />
         <Route path="reset-password" element={<Recover />} />
         <Route path="set-password" element={<Recover />} />
+        <Route path="items" element={<Browse />} />
+        <Route path="reports/new" element={<RequireAuth><ReportForm key="new" /></RequireAuth>} />
+        <Route path="reports/:id" element={<ReportDetail />} />
+        <Route path="reports/:id/edit" element={<RequireAuth><ReportForm key="edit" /></RequireAuth>} />
+        <Route path="my/reports" element={<RequireAuth><MyReports /></RequireAuth>} />
         <Route element={<LegacyFrame />}>
-          <Route path="items" element={<Browse />} />
-          <Route path="reports/new" element={<RequireAuth><ReportForm key="new" /></RequireAuth>} />
-          <Route path="reports/:id" element={<ReportDetail />} />
-          <Route path="reports/:id/edit" element={<RequireAuth><ReportForm key="edit" /></RequireAuth>} />
-          <Route path="my/reports" element={<RequireAuth><MyReports /></RequireAuth>} />
           <Route path="my/claims" element={<RequireAuth><MyClaims /></RequireAuth>} />
           <Route path="my/claims/:id" element={<RequireAuth><ClaimDetail /></RequireAuth>} />
         </Route>
@@ -79,6 +82,8 @@ export default function App() {
         <Route path="registry" element={<RequirePermission permission="students.manage"><Registry /></RequirePermission>} />
         <Route path="admins" element={<RequirePermission permission="admins.manage"><Admins /></RequirePermission>} />
         <Route path="audit" element={<RequirePermission permission="audit.view"><AuditLog /></RequirePermission>} />
+        <Route path="locations" element={<RequirePermission permission="locations.manage"><Locations /></RequirePermission>} />
+        <Route path="categories" element={<RequirePermission permission="categories.manage"><Categories /></RequirePermission>} />
       </Route>
     </Routes>
   );

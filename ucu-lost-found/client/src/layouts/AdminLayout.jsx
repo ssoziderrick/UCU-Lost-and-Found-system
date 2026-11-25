@@ -2,7 +2,7 @@
 // Only sections that exist, and that the signed-in role may use, are listed.
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardList, ExternalLink, FolderOpen, IdCard, LogOut, Menu, ScrollText, ShieldCheck, Users, X } from 'lucide-react';
+import { ClipboardList, ExternalLink, FolderOpen, FolderTree, IdCard, LogOut, MapPinned, Menu, ScrollText, ShieldCheck, Users, X } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { Logo } from '../design/Logo';
 import { cx } from '../design/primitives';
@@ -23,6 +23,13 @@ const SECTIONS = [
       { to: '/admin/students', label: 'Students', icon: Users, permission: 'students.manage', match: (p) => p === '/admin/students' },
       { to: '/admin/registry', label: 'Student registry', icon: IdCard, permission: 'students.manage', match: (p) => p === '/admin/registry' },
       { to: '/admin/admins', label: 'Administrators', icon: ShieldCheck, permission: 'admins.manage', match: (p) => p === '/admin/admins' },
+    ],
+  },
+  {
+    heading: 'Setup',
+    items: [
+      { to: '/admin/locations', label: 'Campus locations', icon: MapPinned, permission: 'locations.manage', match: (p) => p === '/admin/locations' },
+      { to: '/admin/categories', label: 'Categories', icon: FolderTree, permission: 'categories.manage', match: (p) => p === '/admin/categories' },
     ],
   },
   {

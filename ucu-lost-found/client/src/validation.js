@@ -58,16 +58,28 @@ export function validateReport(f) {
   if (!f.categoryId) e.categoryId = 'Choose a category from the list.';
   if (len(f.description) < 10) e.description = 'Public description must be at least 10 characters — describe the item without private identifying marks.';
   else if (len(f.description) > 1000) e.description = 'Public description must be 1000 characters or fewer — please shorten it.';
-  if (len(f.privateDetails) > 1000) e.privateDetails = 'Private identifying details must be 1000 characters or fewer.';
+  if (len(f.identifyingDetails) > 1000) e.identifyingDetails = 'Identifying details must be 1000 characters or fewer.';
+  if (len(f.custodyNote) > 255) e.custodyNote = 'Keep this note to 255 characters or fewer.';
   if (!f.eventDate) e.eventDate = 'Date is required.';
   else if (f.eventDate > today()) e.eventDate = 'The date cannot be in the future — choose today or an earlier date.';
   if (!f.locationId) e.locationId = 'Choose a campus location from the list.';
   if (len(f.locationDetail) > 150) e.locationDetail = 'Location detail must be 150 characters or fewer.';
-  if (f.photo) {
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(f.photo.type)) e.photo = 'Upload a JPG, PNG or WebP image.';
-    else if (f.photo.size > 2 * 1024 * 1024) e.photo = 'Photo must be 2 MB or smaller — choose a smaller image.';
-  }
+  const photoProblem = validatePhotos(f.photos || [], f.existingPhotoCount || 0);
+  if (photoProblem) e.photos = photoProblem;
   return e;
+}
+
+export const MAX_PHOTOS = 4;
+export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
+/** Checks new photo files (File objects) against the server's rules. Returns a message or null. */
+export function validatePhotos(files, existingCount = 0) {
+  if (files.length + existingCount > MAX_PHOTOS) return `Add at most ${MAX_PHOTOS} photos.`;
+  const bad = files.find((f) => !['image/jpeg', 'image/png', 'image/webp'].includes(f.type));
+  if (bad) return `“${bad.name}” isn’t a JPG, PNG or WebP image.`;
+  const big = files.find((f) => f.size > MAX_PHOTO_BYTES);
+  if (big) return `“${big.name}” is larger than 5 MB. Choose a smaller photo.`;
+  return null;
 }
 
 export function validateClaim(f) {
