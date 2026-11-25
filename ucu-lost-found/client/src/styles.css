@@ -1,22 +1,23 @@
-/* UCU Lost & Found — mobile-first stylesheet.
-   Colour pairs chosen for WCAG AA contrast (≥ 4.5:1 for body text). */
+/* Legacy v1 stylesheet, re-themed to the UCU Findora palette.
+   Loaded into the "legacy" cascade layer (see index.css) so Tailwind utilities always win.
+   Pages are moved off these classes as they are rebuilt; delete rules once nothing uses them. */
 :root {
-  --navy: #17365d;      /* primary: white text on navy = 12.2:1 */
-  --navy-dark: #0f2540;
-  --gold: #f2b705;      /* accent: gold on navy = 6.7:1 */
-  --ink: #1d2733;       /* body text: 15.1:1 on white */
-  --muted: #4a5868;     /* secondary text: 6.7:1 on page background */
-  --bg: #f4f6f9;
+  --navy: #1D4ED8;      /* UCU blue (primary): white on it = 6.7:1 */
+  --navy-dark: #1E3A8A; /* deep blue: headings, hover */
+  --gold: #F9A8D4;      /* soft signal pink, only behind dark text */
+  --ink: #172033;       /* body text: 16.3:1 on white */
+  --muted: #5B6475;     /* secondary text: 6.0:1 on white */
+  --bg: #F7F7FA;
   --card: #ffffff;
-  --line: #d5dbe3;
-  --ok: #0f6b3a;  --ok-bg: #e3f4ea;
-  --warn: #7a4a00; --warn-bg: #fff1d6;
-  --err: #a11d1d; --err-bg: #fde8e8;
-  --info: #17365d; --info-bg: #e4ecf8;
-  --focus: #f2b705;
+  --line: #E6E3EA;
+  --ok: #15803D;  --ok-bg: #DCFCE7;
+  --warn: #92400E; --warn-bg: #FEF3C7;
+  --err: #B91C1C; --err-bg: #FEE2E2;
+  --info: #1E3A8A; --info-bg: #EFF6FF;
+  --focus: #2563EB;
   --radius: 10px;
-  --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
-  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --shadow: 0 1px 2px rgba(23, 32, 51, .06), 0 1px 3px rgba(23, 32, 51, .08);
+  font-family: "Inter Variable", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
   color: var(--ink);
   background: var(--bg);
   line-height: 1.55;
@@ -25,16 +26,16 @@
 * { box-sizing: border-box; }
 body { margin: 0; }
 img { max-width: 100%; display: block; }
-a { color: var(--navy); text-underline-offset: 2px; }
-a:hover { color: var(--navy-dark); }
-h1, h2, h3 { line-height: 1.25; margin: 0 0 .6rem; color: var(--navy-dark); }
-h1 { font-size: 1.6rem; }
-h2 { font-size: 1.25rem; }
-.h3, h3 { font-size: 1.05rem; }
-p { margin: 0 0 .8rem; }
+:where(.legacy-page) a { color: var(--navy); text-underline-offset: 2px; }
+:where(.legacy-page) a:hover { color: var(--navy-dark); }
+:where(.legacy-page) h1, :where(.legacy-page) h2, :where(.legacy-page) h3 { line-height: 1.25; margin: 0 0 .6rem; color: var(--navy-dark); }
+:where(.legacy-page) h1 { font-size: 1.6rem; }
+:where(.legacy-page) h2 { font-size: 1.25rem; }
+:where(.legacy-page) .h3, :where(.legacy-page) h3 { font-size: 1.05rem; }
+:where(.legacy-page) p { margin: 0 0 .8rem; }
 
 /* ---------- Keyboard focus: always visible ---------- */
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; box-shadow: 0 0 0 5px var(--navy-dark); border-radius: 4px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 main:focus { outline: none; }
 .skip-link { position: absolute; left: .5rem; top: -3rem; background: var(--gold); color: #000; padding: .6rem 1rem; z-index: 100; font-weight: 600; border-radius: 6px; }
 .skip-link:focus { top: .5rem; }
@@ -123,11 +124,11 @@ main:focus { outline: none; }
 .req { color: var(--err); }
 .optional { font-weight: 400; color: var(--muted); font-size: .9rem; }
 .hint { color: var(--muted); font-size: .9rem; margin: -.1rem 0 .35rem; }
-input:not([type=radio]):not([type=checkbox]), select, textarea {
+:where(.legacy-page) input:not([type=radio]):not([type=checkbox]), :where(.legacy-page) select, :where(.legacy-page) textarea {
   width: 100%; font: inherit; color: var(--ink); background: #fff; padding: .6rem .7rem; min-height: 44px;
   border: 2px solid #6b7b8e; border-radius: 8px;
 }
-input:focus-visible, select:focus-visible, textarea:focus-visible { border-color: var(--navy); }
+:where(.legacy-page) input:focus-visible, :where(.legacy-page) select:focus-visible, :where(.legacy-page) textarea:focus-visible { border-color: var(--navy); }
 .has-error input, .has-error select, .has-error textarea { border-color: var(--err); }
 .field-error { color: var(--err); font-weight: 600; font-size: .92rem; margin: .3rem 0 0; }
 .field-row { display: grid; gap: 0 1rem; }
@@ -155,9 +156,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
 .auth-alt { margin-top: 1rem; text-align: center; }
 
 /* ---------- Browse ---------- */
-.hero { background: linear-gradient(135deg, var(--navy), #24508a); color: #fff; border-radius: var(--radius); padding: 1.4rem; margin-bottom: 1.25rem; }
+.hero { background: var(--navy-dark); color: #fff; border-radius: var(--radius); padding: 1.4rem; margin-bottom: 1.25rem; }
 .hero h1 { color: #fff; font-size: 1.5rem; }
-.hero p { color: #e4ecf8; max-width: 60ch; }
+.hero p { color: #DBEAFE; max-width: 60ch; }
 .hero-actions { display: flex; gap: .7rem; flex-wrap: wrap; }
 .browse-layout { display: grid; gap: 1.25rem; }
 .filters { padding: 1rem; align-self: start; }
@@ -193,7 +194,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
 .facts dt { font-size: .82rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
 .facts dd { margin: 0; }
 .prewrap { white-space: pre-wrap; overflow-wrap: anywhere; }
-blockquote { margin: .5rem 0; padding: .7rem .9rem; background: #f7f9fc; border-left: 4px solid var(--navy); border-radius: 6px; }
+:where(.legacy-page) blockquote { margin: .5rem 0; padding: .7rem .9rem; background: #f7f9fc; border-left: 4px solid var(--navy); border-radius: 6px; }
 
 /* ---------- Tables (become cards on phones) ---------- */
 .page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }

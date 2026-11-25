@@ -13,7 +13,7 @@ export function Login() {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const from = location.state?.from || '/';
+  const from = location.state?.from;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -23,7 +23,7 @@ export function Login() {
     setBusy(true);
     try {
       const d = await login(form.email, form.password);
-      navigate(d.user.role === 'admin' && from === '/' ? '/admin' : from, { replace: true, state: { flash: d.message } });
+      navigate(from || (d.user.role === 'admin' ? '/admin' : '/dashboard'), { replace: true, state: { flash: d.message } });
     } catch (err) {
       setErrors(err.fields || {}); setMessage(err.message);
     } finally { setBusy(false); }
@@ -68,7 +68,7 @@ export function Register() {
     try {
       const { confirmPassword, ...payload } = form; // eslint-disable-line no-unused-vars
       const d = await register(payload);
-      navigate(location.state?.from || '/', { replace: true, state: { flash: d.message } });
+      navigate(location.state?.from || '/dashboard', { replace: true, state: { flash: d.message } });
     } catch (err) {
       setErrors(err.fields || {}); setMessage(err.message);
     } finally { setBusy(false); }

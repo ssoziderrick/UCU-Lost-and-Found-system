@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 
 export function usePageTitle(title) {
-  useEffect(() => { document.title = `${title} · UCU Lost & Found`; }, [title]);
+  useEffect(() => { document.title = `${title} · UCU Findora`; }, [title]);
 }
 
 export function formatDate(d) {

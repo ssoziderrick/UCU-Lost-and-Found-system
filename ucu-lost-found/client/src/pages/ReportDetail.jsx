@@ -26,13 +26,13 @@ export default function ReportDetail() {
     try { const d = await api.post(`/api/reports/${id}/close`); setFlash(d.message); load(); } catch (e) { setError(e.message); }
   };
 
-  if (error && !report) return <><Alert type="error">{error}</Alert><p><Link to="/">← Back to all items</Link></p></>;
+  if (error && !report) return <><Alert type="error">{error}</Alert><p><Link to="/items">← Back to all items</Link></p></>;
   if (!report) return <Loading label="Loading item…" />;
 
   const done = report.status === 'returned' || report.status === 'closed';
   return (
     <>
-      <p className="crumbs"><Link to="/">← Back to all items</Link></p>
+      <p className="crumbs"><Link to="/items">← Back to all items</Link></p>
       <Alert type="success" onClose={() => setFlash('')}>{flash}</Alert>
       <Alert type="error">{error}</Alert>
       {report.status === 'returned' && <Alert type="info">This item has been returned to its owner{report.returnedAt ? ` on ${formatDate(report.returnedAt)}` : ''}. The search is over — no further claims are accepted.</Alert>}

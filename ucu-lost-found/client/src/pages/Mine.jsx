@@ -61,7 +61,7 @@ export function MyClaims() {
       <Alert type="error">{error}</Alert>
       {!items && !error && <Loading label="Loading your claims…" />}
       {items && items.length === 0 && (
-        <EmptyState title="No claims yet"><p><Link to="/?type=found">Browse found items</Link> to see if yours has been handed in.</p></EmptyState>
+        <EmptyState title="No claims yet"><p><Link to="/items?type=found">Browse found items</Link> to see if yours has been handed in.</p></EmptyState>
       )}
       {items && items.length > 0 && (
         <ul className="claim-list">

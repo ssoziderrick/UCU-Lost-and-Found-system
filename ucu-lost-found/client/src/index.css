@@ -1,0 +1,86 @@
+/* UCU Findora design system.
+   Cascade order: Tailwind's reset (base) < the legacy v1 stylesheet < components < utilities.
+   Unlayered CSS would beat every utility, so the legacy file is imported into its own layer. */
+@layer theme, base, legacy, components, utilities;
+
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/plus-jakarta-sans";
+@import "tailwindcss";
+@import "./styles.css" layer(legacy);
+
+@theme {
+  /* Fonts */
+  --font-sans: "Inter Variable", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --font-display: "Plus Jakarta Sans Variable", "Inter Variable", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  /* Brand blue leads: primary actions, links, selected navigation. */
+  --color-brand-50: #EFF6FF;
+  --color-brand-100: #DBEAFE;
+  --color-brand-200: #BFDBFE;
+  --color-brand-300: #93C5FD;
+  --color-brand-400: #60A5FA;   /* charts and fills only: 2.5:1 on white, never text */
+  --color-brand-600: #1D4ED8;   /* UCU blue: 6.7:1 with white */
+  --color-brand-700: #1E40AF;
+  --color-brand-800: #1E3A8A;   /* deep blue */
+  --color-brand-900: #172554;
+
+  /* Pink signals one thing: "this might be yours" (matches, unread alerts). */
+  --color-signal-50: #FDF2F8;
+  --color-signal-100: #FCE7F3;
+  --color-signal-300: #F9A8D4;
+  --color-signal-500: #EC4899;
+  --color-signal-600: #BE185D;  /* 6.0:1 on white */
+  --color-signal-700: #9D174D;  /* 6.7:1 on signal-100 */
+
+  /* Neutrals */
+  --color-ink: #172033;         /* text, admin sidebar: 16.3:1 on white */
+  --color-muted: #5B6475;       /* secondary text: 6.0:1 on white */
+  --color-line: #E6E3EA;
+  --color-line-strong: #CFCBD6;
+  --color-mist: #F7F7FA;        /* app canvas */
+
+  /* Semantic */
+  --color-success-50: #F0FDF4;
+  --color-success-100: #DCFCE7;
+  --color-success-700: #15803D;
+  --color-success-800: #166534;
+  --color-danger-50: #FEF2F2;
+  --color-danger-100: #FEE2E2;
+  --color-danger-600: #DC2626;
+  --color-danger-700: #B91C1C;
+  --color-danger-800: #991B1B;
+  --color-warning-50: #FFFBEB;
+  --color-warning-100: #FEF3C7;
+  --color-warning-700: #B45309;
+  --color-warning-800: #92400E;
+
+  /* Shape */
+  --radius-control: 8px;
+  --radius-card: 10px;
+  --shadow-card: 0 1px 2px rgb(23 32 51 / 0.06), 0 1px 3px rgb(23 32 51 / 0.08);
+  --shadow-pop: 0 8px 24px rgb(23 32 51 / 0.14);
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-mist font-sans text-ink antialiased;
+    line-height: 1.55;
+  }
+  h1, h2, h3, h4 { @apply font-display text-ink; text-wrap: balance; }
+  :focus-visible { outline: 3px solid var(--color-brand-600); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+}
+
+@layer components {
+  /* Visually hidden until focused: the first Tab stop on every page. */
+  .skip-to-content {
+    @apply absolute left-3 -top-16 z-[100] rounded-control bg-brand-800 px-4 py-2.5 font-semibold text-white;
+  }
+  .skip-to-content:focus { @apply top-3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

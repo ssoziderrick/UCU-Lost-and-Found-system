@@ -1,0 +1,1130 @@
+<title>UCU Findora Design Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~72ch) for prose, full-width (1120px) bands for the screen mock-ups. */
+:root{
+  --bg:#FBFAFC; --surface:#FFFFFF; --fg:#172033; --muted:#5B6475; --line:#E6E3EA;
+  --accent:#1D4ED8; --accent-soft:#EFF6FF; --pink:#BE185D; --pink-soft:#FCE7F3; --code-bg:#F3F4F8;
+  --ok:#15803D; --err:#DC2626; --warn:#B45309;
+  /* App tokens: the mock-ups always show the app's light theme, in both page themes. */
+  --app-bg:#FFFFFF; --app-soft:#EFF6FF; --app-rose:#60A5FA; --app-deep:#1D4ED8; --app-deeper:#1E3A8A;
+  --app-pink:#BE185D; --app-pink-dark:#9D174D; --app-blush:#FCE7F3; --app-pink-line:#F9A8D4;
+  --app-navy:#172033; --app-grey:#F7F7FA; --app-line:#E6E3EA; --app-muted:#5B6475;
+  --app-ok:#15803D; --app-ok-bg:#DCFCE7; --app-err:#DC2626; --app-warn:#B45309; --app-warn-bg:#FEF3C7;
+  --display:"Plus Jakarta Sans",ui-sans-serif,system-ui,"Segoe UI",sans-serif;
+  --body:"Inter",ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12131A; --surface:#1B1D27; --fg:#ECEAF0; --muted:#A3A8B8; --line:#2E3140;
+  --accent:#7AA7FF; --accent-soft:#18264A; --pink:#F472B6; --pink-soft:#3A1B2C; --code-bg:#22242F; --ok:#4ADE80; --err:#F87171; --warn:#FBBF24; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12131A; --surface:#1B1D27; --fg:#ECEAF0; --muted:#A3A8B8; --line:#2E3140;
+  --accent:#7AA7FF; --accent-soft:#18264A; --pink:#F472B6; --pink-soft:#3A1B2C; --code-bg:#22242F; --ok:#4ADE80; --err:#F87171; --warn:#FBBF24; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 4rem}
+.wrap{max-width:1120px;margin:0 auto}
+.prose{max-width:72ch}
+h1,h2,h3,h4{font-family:var(--display);line-height:1.2;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,4.5vw,3rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:1.65rem;font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.15rem;font-weight:700}
+h4{font-size:1rem;font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--code-bg);padding:.1em .35em;border-radius:4px}
+.eyebrow{font:600 .75rem/1 var(--body);text-transform:uppercase;letter-spacing:.12em;color:var(--accent)}
+.muted{color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:1rem}
+.stack-lg{display:flex;flex-direction:column;gap:1.5rem}
+
+/* Top bar & contents */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding-block:1.25rem;border-bottom:1px solid var(--line)}
+.status-pill{font:600 .78rem/1 var(--body);padding:.45rem .7rem;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+header.hero{padding-block:3rem 2rem;display:grid;gap:1.25rem}
+header.hero .lede{font-size:1.15rem;color:var(--muted);max-width:62ch}
+nav.toc{display:flex;flex-wrap:wrap;gap:.4rem .5rem;margin-top:.5rem}
+nav.toc a{font-size:.85rem;text-decoration:none;color:var(--fg);border:1px solid var(--line);padding:.35rem .65rem;border-radius:6px;background:var(--surface)}
+nav.toc a:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc a:focus-visible,a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+section.block{padding-block:3rem;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:1.5rem}
+.sec-head{display:flex;flex-direction:column;gap:.5rem}
+
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:1rem}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:1rem}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:.6rem;min-width:0}
+.panel.pick{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.tag{display:inline-block;font:600 .72rem/1 var(--body);padding:.35rem .5rem;border-radius:5px;background:var(--accent-soft);color:var(--accent);width:fit-content}
+ul.clean{margin:0;padding-left:1.15rem;display:flex;flex-direction:column;gap:.35rem}
+.callout{border-left:3px solid var(--accent);background:var(--surface);padding:1rem 1.25rem;border-radius:0 8px 8px 0}
+.callout.warn{border-left-color:var(--warn)}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:.6rem .85rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* Brand */
+.brandrow{display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center}
+.logo-lockup{display:flex;align-items:center;gap:.75rem}
+.wordmark{font:800 2.2rem/1 var(--display);letter-spacing:-.03em;color:var(--fg)}
+.wordmark b{color:var(--accent);font-weight:800;margin-right:.3rem}
+.logo-tile{width:88px;height:88px;border-radius:20px;display:grid;place-items:center;flex:none}
+.logo-tile.light{background:#FFFFFF;border:1px solid #E6E3EA}
+.logo-tile.sky{background:#EFF6FF;border:1px solid #DBEAFE}
+.logo-tile.navy{background:#172033}
+
+/* Swatches */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.75rem}
+.sw{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.sw .chip{height:64px;border-bottom:1px solid var(--line)}
+.sw .meta{padding:.6rem .7rem;font-size:.8rem;display:flex;flex-direction:column;gap:.15rem}
+.sw .meta strong{font-size:.85rem}
+
+/* Mock frames */
+.frame{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.frame-bar{display:flex;align-items:center;gap:.5rem;padding:.55rem .8rem;border-bottom:1px solid var(--line);font:500 .75rem var(--mono);color:var(--muted)}
+.frame-bar i{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block}
+.frame-scroll{overflow-x:auto}
+.app{background:var(--app-bg);color:var(--app-navy);font-family:var(--body);font-size:14px;line-height:1.5}
+.app h3,.app h4,.app h5{color:var(--app-navy);font-family:var(--display);margin:0}
+.app .btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;font:600 .85rem/1 var(--body);padding:.7rem 1rem;border-radius:8px;border:1px solid transparent;cursor:default;white-space:nowrap}
+.app .btn.primary{background:var(--app-deep);color:#fff}
+.app .btn.ghost{background:#fff;color:var(--app-navy);border-color:var(--app-line)}
+.app .btn.soft{background:var(--app-soft);color:var(--app-deeper)}
+.app .field{display:flex;flex-direction:column;gap:.35rem}
+.app label{font-weight:600;font-size:.82rem;color:var(--app-navy)}
+.app .input{display:flex;align-items:center;gap:.5rem;border:1px solid #CFCBD6;border-radius:8px;padding:.65rem .8rem;background:#fff;color:var(--app-muted)}
+.app .input.focus{border-color:var(--app-deep);box-shadow:0 0 0 3px #BFDBFE;color:var(--app-navy)}
+.app .hint{font-size:.76rem;color:var(--app-muted)}
+.app .badge{display:inline-block;font:600 .7rem/1 var(--body);padding:.3rem .5rem;border-radius:5px}
+.b-lost{background:#FEE2E2;color:#991B1B}
+.b-found{background:#DCFCE7;color:#166534}
+.b-pending{background:#FEF3C7;color:#92400E}
+.b-approved{background:#DBEAFE;color:#1E40AF}
+.b-returned{background:#F1F5F9;color:#334155}
+.b-match{background:var(--app-blush);color:var(--app-pink-dark)}
+
+/* Login mock */
+.login{display:grid;grid-template-columns:1.05fr 1fr;min-width:880px;min-height:560px}
+.login-side{background:var(--app-deeper);color:#fff;padding:2.5rem;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.login-side h3{color:#fff;font-size:2rem;line-height:1.15;letter-spacing:-.02em;max-width:14ch}
+.login-side p{color:#CBD5E1;max-width:36ch}
+.login-side .pins{position:absolute;right:-30px;bottom:-30px;opacity:.16}
+.login-side .stat{display:flex;gap:2rem;font-size:.8rem;color:#CBD5E1;position:relative}
+.login-side .stat b{display:block;color:#fff;font:700 1.2rem var(--display)}
+.login-form{padding:2.5rem 3rem;display:flex;flex-direction:column;gap:1.1rem;justify-content:center}
+.tabs{display:flex;gap:.25rem;background:var(--app-grey);border-radius:8px;padding:.25rem;width:fit-content}
+.tabs span{padding:.45rem .9rem;border-radius:6px;font-weight:600;font-size:.82rem;color:var(--app-muted)}
+.tabs span.on{background:#fff;color:var(--app-navy);box-shadow:0 1px 2px rgba(23,32,51,.12)}
+.check{display:flex;align-items:center;gap:.45rem;font-size:.82rem}
+.check i{width:16px;height:16px;border:1.5px solid #B9B4C2;border-radius:4px;display:inline-block}
+.row-between{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+
+/* Student dashboard mock */
+.sd{min-width:960px}
+.appbar{display:flex;align-items:center;gap:1.5rem;padding:.8rem 1.5rem;border-bottom:1px solid var(--app-line);background:#fff}
+.appbar nav{display:flex;gap:.25rem;flex:1}
+.appbar nav span{padding:.45rem .75rem;border-radius:6px;color:var(--app-muted);font-weight:500}
+.appbar nav span.on{color:var(--app-deep);background:var(--app-soft);font-weight:600}
+.bell{position:relative;width:34px;height:34px;border-radius:8px;border:1px solid var(--app-line);display:grid;place-items:center}
+.bell em{position:absolute;top:-5px;right:-5px;background:var(--app-pink);color:#fff;font:700 .65rem/1 var(--body);font-style:normal;padding:.2rem .35rem;border-radius:999px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--app-soft);color:var(--app-deeper);display:grid;place-items:center;font-weight:700;font-size:.8rem}
+.sd-body{background:var(--app-grey);padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem}
+.greet{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem}
+.greet h3{font-size:1.4rem}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem}
+.kpi{background:#fff;border:1px solid var(--app-line);border-radius:10px;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.2rem}
+.kpi small{color:var(--app-muted);font-size:.75rem;font-weight:500}
+.kpi strong{font:700 1.5rem/1.1 var(--display);font-variant-numeric:tabular-nums}
+.kpi span{font-size:.72rem;color:var(--app-muted)}
+.cols{display:grid;grid-template-columns:1.6fr 1fr;gap:1rem}
+.card{background:#fff;border:1px solid var(--app-line);border-radius:10px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.75rem}
+.card-head{display:flex;justify-content:space-between;align-items:center}
+.card-head a{font-size:.8rem;color:var(--app-deep);font-weight:600;text-decoration:none}
+.match{display:grid;grid-template-columns:52px 1fr auto;gap:.85rem;align-items:center;padding:.75rem;border:1px solid var(--app-line);border-radius:8px}
+.match.hot{border-color:var(--app-pink-line);background:#FFF7FB}
+.thumb{width:52px;height:52px;border-radius:8px;background:var(--app-grey);display:grid;place-items:center;border:1px solid var(--app-line)}
+.match h5{font-size:.9rem}
+.match p{font-size:.78rem;color:var(--app-muted)}
+.score{font:700 .95rem var(--display);color:var(--app-pink);text-align:right}
+.score small{display:block;font:500 .68rem var(--body);color:var(--app-muted)}
+.feed{display:flex;flex-direction:column}
+.feed div{display:grid;grid-template-columns:8px 1fr;gap:.7rem;padding:.55rem 0;border-bottom:1px solid var(--app-line);font-size:.8rem}
+.feed div:last-child{border-bottom:0}
+.feed i{width:8px;height:8px;border-radius:50%;margin-top:.45rem;background:#D4D0DB}
+.feed i.new{background:var(--app-pink)}
+.feed time{display:block;color:var(--app-muted);font-size:.72rem}
+.qa{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.qa .btn{justify-content:flex-start;padding:.85rem}
+.steps{display:flex;gap:.3rem;align-items:center;font-size:.72rem;color:var(--app-muted);flex-wrap:wrap}
+.steps b{width:8px;height:8px;border-radius:50%;background:#D4D0DB;display:inline-block}
+.steps b.on{background:var(--app-deep)}
+.steps hr{border:0;border-top:2px solid #E6E3EA;width:18px;margin:0}
+.steps hr.on{border-color:var(--app-deep)}
+
+/* Mobile mock */
+.phones{display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start}
+.phone{width:300px;max-width:100%;border:8px solid #1F2230;border-radius:34px;overflow:hidden;background:#fff;flex:none}
+.phone .app{display:flex;flex-direction:column;height:600px}
+.ph-top{display:flex;justify-content:space-between;align-items:center;padding:1rem 1rem .5rem}
+.ph-body{flex:1;overflow:hidden;padding:.25rem 1rem 1rem;display:flex;flex-direction:column;gap:.75rem;background:var(--app-grey)}
+.ph-tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--app-line);background:#fff;padding:.4rem 0 .6rem}
+.ph-tabs span{display:flex;flex-direction:column;align-items:center;gap:.15rem;font-size:.62rem;color:var(--app-muted)}
+.ph-tabs span.on{color:var(--app-deep);font-weight:600}
+.ph-tabs .fab{width:42px;height:42px;border-radius:50%;background:var(--app-deep);color:#fff;display:grid;place-items:center;margin-top:-18px;font-size:1.3rem;font-weight:400}
+.ph-kpis{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.ph-kpis .kpi{padding:.65rem .75rem}
+.ph-kpis .kpi strong{font-size:1.2rem}
+.notice{background:#fff;border:1px solid var(--app-pink-line);border-radius:10px;padding:.8rem;display:flex;flex-direction:column;gap:.35rem}
+.notice strong{color:var(--app-pink-dark);font-family:var(--display)}
+.notice p{font-size:.78rem;color:var(--app-muted)}
+
+/* Admin mock */
+.ad{display:grid;grid-template-columns:220px 1fr;min-width:1040px}
+.side{background:var(--app-navy);color:#CBD0DC;padding:1rem .75rem;display:flex;flex-direction:column;gap:.15rem;font-size:.82rem}
+.side .brand{display:flex;align-items:center;gap:.5rem;padding:.25rem .5rem 1rem;color:#fff;font:800 1.05rem var(--display)}
+.side .brand b{color:#93C5FD}
+.side small{text-transform:uppercase;letter-spacing:.1em;font-size:.62rem;color:#93A3C8;padding:.85rem .6rem .3rem}
+.side span{padding:.45rem .6rem;border-radius:6px;display:flex;justify-content:space-between}
+.side span.on{background:rgba(147,197,253,.14);color:#fff;box-shadow:inset 3px 0 0 #60A5FA}
+.side span em{font-style:normal;background:var(--app-pink);color:#fff;font-size:.65rem;font-weight:700;border-radius:999px;padding:.1rem .4rem}
+.ad-main{background:var(--app-grey);display:flex;flex-direction:column}
+.ad-top{display:flex;justify-content:space-between;align-items:center;padding:.8rem 1.5rem;background:#fff;border-bottom:1px solid var(--app-line);gap:1rem}
+.search{flex:1;max-width:380px}
+.ad-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem}
+.kpis6{display:grid;grid-template-columns:repeat(6,1fr);gap:.6rem}
+.kpi.alert{border-color:var(--app-pink-line)}
+.kpi.alert strong{color:var(--app-pink)}
+.ad-cols{display:grid;grid-template-columns:1.55fr 1fr;gap:1rem}
+.app table{font-size:.8rem}
+.app th{color:var(--app-muted);font-size:.66rem;border-bottom:1px solid var(--app-line);padding:.5rem .6rem}
+.app td{border-bottom:1px solid var(--app-line);padding:.6rem;color:var(--app-navy)}
+.app td small{display:block;color:var(--app-muted);font-size:.72rem}
+.bars{display:flex;flex-direction:column;gap:.5rem}
+.bar{display:grid;grid-template-columns:110px 1fr 28px;gap:.5rem;align-items:center;font-size:.75rem}
+.bar div{height:8px;background:var(--app-grey);border-radius:4px;overflow:hidden}
+.bar div i{display:block;height:100%;background:var(--app-rose)}
+.bar b{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.example-note{font:600 .68rem/1 var(--body);color:var(--app-warn);background:var(--app-warn-bg);padding:.35rem .55rem;border-radius:5px;width:fit-content}
+
+/* Diagrams */
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1rem;overflow-x:auto}
+pre.mermaid{margin:0;background:transparent;font-family:var(--body)}
+pre.code{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem;overflow-x:auto;font:400 .82rem/1.6 var(--mono);margin:0}
+.formula{font:500 .95rem/1.7 var(--mono);background:var(--code-bg);border-radius:10px;padding:1rem 1.25rem;overflow-x:auto;border:1px solid var(--line)}
+
+/* Roadmap */
+.phases{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.phase{display:grid;grid-template-columns:150px 1fr;gap:1.25rem;padding:1.1rem 1.25rem;border-bottom:1px solid var(--line)}
+.phase:last-child{border-bottom:0}
+.phase h4{font-size:.95rem}
+.phase .when{font:600 .78rem var(--body);color:var(--accent)}
+.phase .when span{display:block;color:var(--muted);font-weight:500}
+@media (max-width:640px){.phase{grid-template-columns:1fr;gap:.4rem}}
+
+.decisions{counter-reset:d;display:flex;flex-direction:column;gap:.75rem}
+.dec{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem;display:grid;grid-template-columns:2rem 1fr;gap:.75rem}
+.dec::before{counter-increment:d;content:counter(d);font:700 .9rem var(--display);width:2rem;height:2rem;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.dec p{font-size:.92rem}
+footer{padding-top:2rem;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- UCU Findora badge: an original shield (not the official UCU crest) with UCU across the top
+         and a location pin holding a returning arrow (an item coming back). -->
+    <symbol id="badge" viewBox="0 0 64 72">
+      <path d="M32 2 60 9.5V33c0 18.5-12.6 30.3-28 37C16.6 63.3 4 51.5 4 33V9.5z" fill="#1E3A8A"/>
+      <path d="M32 6.6 55.6 13v20c0 15.8-10.5 26.3-23.6 32.6C18.9 59.3 8.4 48.8 8.4 33V13z" fill="none" stroke="#93C5FD" stroke-width="1.4"/>
+      <text x="32" y="25.5" text-anchor="middle" font-family="'Plus Jakarta Sans','Segoe UI',Arial,sans-serif" font-weight="800" font-size="12.5" letter-spacing="1.2" fill="#FFFFFF">UCU</text>
+      <path d="M17 30.5h30" stroke="#F472B6" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M32 35c-5.8 0-10.5 4.5-10.5 10.1 0 7.6 10.5 15.9 10.5 15.9s10.5-8.3 10.5-15.9C42.5 39.5 37.8 35 32 35z" fill="#EC4899"/>
+      <path d="M28 40.5v3.7a4 4 0 0 0 8 0v-3.7" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round"/>
+      <path d="M33.4 42.8l2.6-2.6 2.6 2.6" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <!-- One-colour version: shield in currentColor, details cut out in --mark-inner. -->
+    <symbol id="badge-mono" viewBox="0 0 64 72">
+      <path d="M32 2 60 9.5V33c0 18.5-12.6 30.3-28 37C16.6 63.3 4 51.5 4 33V9.5z" fill="currentColor"/>
+      <path d="M32 6.6 55.6 13v20c0 15.8-10.5 26.3-23.6 32.6C18.9 59.3 8.4 48.8 8.4 33V13z" fill="none" stroke="var(--mark-inner,#fff)" stroke-width="1.4"/>
+      <text x="32" y="25.5" text-anchor="middle" font-family="'Plus Jakarta Sans','Segoe UI',Arial,sans-serif" font-weight="800" font-size="12.5" letter-spacing="1.2" fill="var(--mark-inner,#fff)">UCU</text>
+      <path d="M17 30.5h30" stroke="var(--mark-inner,#fff)" stroke-width="1.6" stroke-linecap="round"/>
+      <path d="M32 35c-5.8 0-10.5 4.5-10.5 10.1 0 7.6 10.5 15.9 10.5 15.9s10.5-8.3 10.5-15.9C42.5 39.5 37.8 35 32 35z" fill="var(--mark-inner,#fff)"/>
+      <path d="M28 40.5v3.7a4 4 0 0 0 8 0v-3.7" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+      <path d="M33.4 42.8l2.6-2.6 2.6 2.6" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 20.5a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-id" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="11" r="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 16c.6-1.4 1.7-2 3-2s2.4.6 3 2M14.5 10h4M14.5 13h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-calc" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="8" y="6" width="8" height="3.5" rx=".5" fill="currentColor"/><g fill="currentColor"><circle cx="9" cy="13" r="1"/><circle cx="12" cy="13" r="1"/><circle cx="15" cy="13" r="1"/><circle cx="9" cy="17" r="1"/><circle cx="12" cy="17" r="1"/><circle cx="15" cy="17" r="1"/></g></symbol>
+    <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0zM12 16v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-bottle" viewBox="0 0 24 24"><path d="M10 2.5h4v3l1.5 2.5V20a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 8.5 20V8L10 5.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4M9 12h6M9 16h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo-lockup">
+      <svg width="30" height="34" aria-hidden="true"><use href="#badge"/></svg>
+      <strong style="font-family:var(--display);font-size:1.05rem">UCU Findora · Design &amp; architecture review</strong>
+    </div>
+    <span class="status-pill">Draft for review · 25 Nov 2026</span>
+  </div>
+
+  <header class="hero">
+    <span class="eyebrow">UCU campus lost-property platform · version 2</span>
+    <h1>One campus. One community. Everything found.</h1>
+    <p class="lede">The proposed brand, screens, data model, matching engine and security design for the student side and the administrator side, presented for approval before full implementation starts.</p>
+    <nav class="toc" aria-label="Contents">
+      <a href="#findings">Findings</a><a href="#brand">Name &amp; brand</a><a href="#colour">Colour system</a>
+      <a href="#login">Login</a><a href="#student">Student dashboard</a><a href="#admin">Admin dashboard</a>
+      <a href="#erd">ER diagram</a><a href="#arch">Architecture</a><a href="#matching">Matching</a>
+      <a href="#auth">Auth &amp; recovery</a><a href="#roadmap">Roadmap</a><a href="#decisions">Your decisions</a>
+    </nav>
+  </header>
+
+  <!-- 1. Findings -->
+  <section class="block" id="findings">
+    <div class="sec-head"><span class="eyebrow">Stage 1 · Discovery</span><h2>What we found</h2></div>
+    <div class="grid-2">
+      <div class="panel">
+        <h3>The existing codebase is a solid v1, not a blank slate</h3>
+        <p class="muted">React 19 + Vite, Express 5, MySQL 8. It already has bcrypt hashing, server-side hashed session tokens, Helmet, login rate limiting, zod validation on both sides, private finder details, claims, admin review, confirmed returns, an audit table, 30 API tests and a Playwright walkthrough.</p>
+        <p>The database already enforces one approved claim per item with a generated-column unique index. We keep that design.</p>
+        <p class="muted"><strong>Plan:</strong> evolve v1 into v2 through migrations, keeping what works and not starting again.</p>
+      </div>
+      <div class="panel">
+        <h3>Gaps against the v2 brief</h3>
+        <ul class="clean">
+          <li>Login uses <strong>email</strong>. v2 needs the <strong>registration number</strong> as the identifier, plus a controlled student registry.</li>
+          <li>No password recovery, account activation, admin roles or account deactivation.</li>
+          <li>No matching engine and no notification centre.</li>
+          <li>One photo per report, stored as a BLOB. v2 supports several images with access control.</li>
+          <li>The location list doesn't match the 16 campus locations you supplied, and locations can't be managed.</li>
+          <li>The design is navy and gold. v2 moves to the white, blue and pink system below.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>UCU Alpha portal (reference)</h3>
+        <ul class="clean">
+          <li>Material-style UI in Roboto, on a full-bleed campus photograph with a dark overlay.</li>
+          <li>One centred card with the identity at the top and a <strong>two-step sign-in</strong> (identifier first, then the next step).</li>
+          <li>Its primary button is a saturated pink (<code>#E91E63</code>) with an 8px radius, on navy text.</li>
+          <li>A short utility nav runs along the top: Home, Profiles, Careers, Staff/Student email.</li>
+        </ul>
+        <p class="muted">We borrow the calm hierarchy, the single focused card and the strong colour on navy text. We don't copy the layout, and the badge is an original design rather than the crest.</p>
+      </div>
+      <div class="panel" style="border-color:var(--warn)">
+        <h3>Repository hygiene issue</h3>
+        <p>The repo has <strong>no <code>.gitignore</code></strong>, and <strong>8,790 files from <code>client/node_modules</code></strong> are committed. That makes clones heavy, and a <code>.env</code> could get committed by accident.</p>
+        <p class="muted">First commit of v2: add a <code>.gitignore</code> and run <code>git rm -r --cached</code> on node_modules. No secrets are tracked at the moment (checked).</p>
+      </div>
+    </div>
+    <div class="callout prose">
+      <p><strong>Reference screenshots.</strong> The two "Lost and Found Manager" screenshots are commercial staff tools: coloured tiles, a quick-entry grid of common item types, inquiry lists and match notifications as toasts. We take the <em>quick-entry by item type</em> idea and the idea of a <em>matching queue</em> as its own admin area. We leave out the bright four-colour tile style, which would clash with a restrained white, blue and pink system.</p>
+    </div>
+  </section>
+
+  <!-- 2. Brand -->
+  <section class="block" id="brand">
+    <div class="sec-head"><span class="eyebrow">Product identity</span><h2>UCU Findora</h2></div>
+    <div class="grid-2">
+      <div class="panel pick">
+        <span class="tag">Chosen name</span>
+        <h3>UCU Findora</h3>
+        <p><strong>Findora</strong> (fin-DOR-a) is built from <em>find</em> and reads like the name of a place: the place on campus where things turn up. The <strong>UCU</strong> prefix tells every student straight away that it's the university's own lost-property service, not a random app.</p>
+        <p class="muted">In the app header and on small screens it can shorten to "Findora". Taglines: "Lost it on campus? Let's get it back." · "Everything found, at UCU."</p>
+      </div>
+      <div class="panel" style="border-color:var(--warn)">
+        <h3>Using the UCU name and a badge</h3>
+        <p>A name and logo that carry "UCU" read as an official university service. The badge below is an <strong>original shield</strong>. It doesn't copy the official crest (no Alpha and Omega, cross or dove), so it won't be mistaken for the university seal.</p>
+        <p class="muted">Before a public launch, get written approval from the university (for example its communications office or ICT directorate). Until then the footer reads "Student project, not yet an official UCU service".</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Logo concept: the Findora badge</h3>
+      <p class="muted prose">A shield, the shape students know from university crests and sports badges, with <strong>UCU</strong> across the top. Below the line sits a pink location pin holding a U-shaped arrow that turns back on itself: the item coming home. The shield is UCU blue, and the pin is the only pink, because pink means "something was found". A one-colour version covers stamps, printed receipts at the collection desk and the browser tab icon.</p>
+      <div class="brandrow">
+        <div class="logo-lockup">
+          <svg width="56" height="63" role="img" aria-label="UCU Findora badge"><use href="#badge"/></svg>
+          <span class="wordmark"><b>UCU</b>Findora</span>
+        </div>
+        <div class="logo-tile light"><svg width="54" height="61" role="img" aria-label="Full-colour badge on white"><use href="#badge"/></svg></div>
+        <div class="logo-tile sky"><svg width="54" height="61" role="img" aria-label="Full-colour badge on light blue"><use href="#badge"/></svg></div>
+        <div class="logo-tile navy" style="--mark-inner:#172033"><svg width="54" height="61" style="color:#FFFFFF" role="img" aria-label="One-colour badge on navy"><use href="#badge-mono"/></svg></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Colour -->
+  <section class="block" id="colour">
+    <div class="sec-head"><span class="eyebrow">Design system</span><h2>Colour, type and rules of use</h2>
+      <p class="muted prose">Blue leads and pink signals. About 85% of any screen is white, light grey and navy text. UCU blue carries the primary action, links and the selected navigation item. Pink has one meaning only, "this might be yours": new matches, unread alerts and the pin in the badge. That keeps pink rare enough to get noticed.</p></div>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#FFFFFF"></div><div class="meta"><strong>White</strong><span class="mono">#FFFFFF</span><span class="muted">Page and cards</span></div></div>
+      <div class="sw"><div class="chip" style="background:#F7F7FA"></div><div class="meta"><strong>Mist</strong><span class="mono">#F7F7FA</span><span class="muted">App canvas</span></div></div>
+      <div class="sw"><div class="chip" style="background:#EFF6FF"></div><div class="meta"><strong>Sky</strong><span class="mono">#EFF6FF</span><span class="muted">Selected nav, info panels</span></div></div>
+      <div class="sw"><div class="chip" style="background:#60A5FA"></div><div class="meta"><strong>Light blue</strong><span class="mono">#60A5FA</span><span class="muted">Charts and fills only</span></div></div>
+      <div class="sw"><div class="chip" style="background:#1D4ED8"></div><div class="meta"><strong>UCU blue</strong><span class="mono">#1D4ED8</span><span class="muted">Primary buttons, links</span></div></div>
+      <div class="sw"><div class="chip" style="background:#1E3A8A"></div><div class="meta"><strong>Deep blue</strong><span class="mono">#1E3A8A</span><span class="muted">Hover, login panel, badge</span></div></div>
+      <div class="sw"><div class="chip" style="background:#172033"></div><div class="meta"><strong>Navy</strong><span class="mono">#172033</span><span class="muted">Text, admin sidebar</span></div></div>
+      <div class="sw"><div class="chip" style="background:#5B6475"></div><div class="meta"><strong>Slate</strong><span class="mono">#5B6475</span><span class="muted">Secondary text</span></div></div>
+      <div class="sw"><div class="chip" style="background:#E6E3EA"></div><div class="meta"><strong>Line</strong><span class="mono">#E6E3EA</span><span class="muted">Borders, dividers</span></div></div>
+      <div class="sw"><div class="chip" style="background:#FCE7F3"></div><div class="meta"><strong>Blush</strong><span class="mono">#FCE7F3</span><span class="muted">Match highlight</span></div></div>
+      <div class="sw"><div class="chip" style="background:#BE185D"></div><div class="meta"><strong>Signal pink</strong><span class="mono">#BE185D</span><span class="muted">New match, unread count</span></div></div>
+      <div class="sw"><div class="chip" style="background:#15803D"></div><div class="meta"><strong>Success</strong><span class="mono">#15803D</span><span class="muted">Found, returned</span></div></div>
+      <div class="sw"><div class="chip" style="background:#DC2626"></div><div class="meta"><strong>Error</strong><span class="mono">#DC2626</span><span class="muted">Errors, destructive</span></div></div>
+      <div class="sw"><div class="chip" style="background:#B45309"></div><div class="meta"><strong>Warning</strong><span class="mono">#B45309</span><span class="muted">Pending, expiring</span></div></div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Pairing</th><th class="num">Contrast</th><th>WCAG AA</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td>Navy on white</td><td class="num">16.3 : 1</td><td style="color:var(--ok)">Pass</td><td>All body text and headings</td></tr>
+          <tr><td>Slate on white</td><td class="num">6.0 : 1</td><td style="color:var(--ok)">Pass</td><td>Hints, metadata, timestamps</td></tr>
+          <tr><td>White on UCU blue</td><td class="num">6.7 : 1</td><td style="color:var(--ok)">Pass</td><td>Primary buttons</td></tr>
+          <tr><td>UCU blue on white</td><td class="num">6.7 : 1</td><td style="color:var(--ok)">Pass</td><td>Links, active states</td></tr>
+          <tr><td>Deep blue on sky</td><td class="num">9.5 : 1</td><td style="color:var(--ok)">Pass</td><td>Selected navigation</td></tr>
+          <tr><td>Signal pink on white</td><td class="num">6.0 : 1</td><td style="color:var(--ok)">Pass</td><td>Match scores, "New" labels</td></tr>
+          <tr><td>Dark pink (#9D174D) on blush</td><td class="num">6.7 : 1</td><td style="color:var(--ok)">Pass</td><td>Match badges</td></tr>
+          <tr><td>Light blue (#60A5FA) on white</td><td class="num">2.5 : 1</td><td style="color:var(--err)">Fail</td><td><strong>Never used for text</strong>. Chart bars and fills only.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid-3">
+      <div class="panel"><span class="eyebrow">Display</span><p style="font:700 1.6rem/1.2 var(--display)">Plus Jakarta Sans</p><p class="muted">Headings and numbers. It's friendly and geometric without looking childish.</p></div>
+      <div class="panel"><span class="eyebrow">Body</span><p style="font:400 1.15rem/1.4 var(--body)">Inter, for forms and long text</p><p class="muted">Reads well at 14–16px on cheaper Android screens.</p></div>
+      <div class="panel"><span class="eyebrow">Data</span><p style="font:500 1.1rem/1.4 var(--mono)">J24B05/0123 · FD-1800421</p><p class="muted">Registration numbers and item reference codes, so they're easy to read aloud at the desk.</p></div>
+    </div>
+    <p class="muted prose">Shape and motion: 8px radius on controls, 10px on cards, one shadow level, used only for menus and dialogs. Transitions run 150ms and switch off under <code>prefers-reduced-motion</code>. Spacing uses a 4px base. Touch targets are at least 44px.</p>
+  </section>
+
+  <!-- 4. Login -->
+  <section class="block" id="login">
+    <div class="sec-head"><span class="eyebrow">Screen 1 · Both sides</span><h2>Login with your registration number</h2>
+      <p class="muted prose">One screen with a Student / Staff switch. Students sign in with their registration number. Staff sign in with a staff ID on a separate API route that only admin accounts can use. The format hint follows the registry and is configurable, because we still need to confirm UCU's exact registration number format (all the examples here are made up).</p></div>
+    <div class="frame">
+      <div class="frame-bar"><i></i><i></i><i></i>findora.example/login</div>
+      <div class="frame-scroll">
+        <div class="app login">
+          <div class="login-side">
+            <div class="logo-lockup" style="--mark-inner:#1E3A8A">
+              <svg width="34" height="38" style="color:#FFFFFF" aria-hidden="true"><use href="#badge-mono"/></svg>
+              <span style="font:800 1.3rem var(--display);color:#fff"><b style="color:#93C5FD">UCU</b> Findora</span>
+            </div>
+            <div class="stack" style="position:relative">
+              <h3>Lost it on campus? Let's get it back.</h3>
+              <p>Your campus. Your community. One place to reconnect lost belongings with their owners.</p>
+            </div>
+            <div class="stat"><div><b>16</b>campus locations</div><div><b>24 h</b>typical first match</div><div><b>0</b>public phone numbers</div></div>
+            <svg class="pins" width="260" height="292" aria-hidden="true" style="color:#93C5FD;--mark-inner:#1E3A8A"><use href="#badge-mono"/></svg>
+          </div>
+          <div class="login-form">
+            <div class="tabs" role="tablist"><span class="on">Student</span><span>Staff</span></div>
+            <div class="stack" style="gap:.25rem"><h3 style="font-size:1.5rem">Sign in</h3><p class="hint" style="font-size:.85rem">Use the registration number on your student ID.</p></div>
+            <div class="field">
+              <label>Registration number</label>
+              <div class="input focus"><svg width="18" height="18"><use href="#i-id"/></svg><span class="mono" style="color:#172033">J24B05/0123</span></div>
+              <span class="hint">Format: letter, year, programme code / number. Not case-sensitive.</span>
+            </div>
+            <div class="field">
+              <div class="row-between"><label>Password</label><a style="font-size:.8rem;color:#1D4ED8;font-weight:600;text-decoration:none">Forgot password?</a></div>
+              <div class="input"><svg width="18" height="18"><use href="#i-lock"/></svg><span style="flex:1;letter-spacing:.2em">••••••••••</span><span style="display:flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600;color:#172033"><svg width="16" height="16"><use href="#i-eye"/></svg>Show</span></div>
+            </div>
+            <div class="row-between">
+              <span class="check"><i></i>Keep me signed in for 30 days</span>
+            </div>
+            <span class="btn primary" style="padding:.85rem">Sign in</span>
+            <div style="border-top:1px solid #E6E3EA;padding-top:1rem;font-size:.82rem;color:#5B6475">First time here? <a style="color:#1D4ED8;font-weight:600;text-decoration:none">Activate your student account</a>. We check your registration number against the student registry and send a code to your university email.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel"><h4>Behaviour</h4><ul class="clean">
+        <li>The registration number is normalised (trimmed, upper-cased) before lookup, and stored unique.</li>
+        <li>A wrong number and a wrong password give the same message: "Registration number or password is incorrect."</li>
+        <li>After 5 failures the account is locked for 15 minutes, and IP rate limiting applies on top. The lock message doesn't confirm the account exists.</li>
+        <li>"Keep me signed in" issues a 30-day session instead of 8 hours. It's a hashed server-side token like v1, so logging out or resetting the password kills it.</li>
+      </ul></div>
+      <div class="panel"><h4>Accessibility</h4><ul class="clean">
+        <li>Real <code>&lt;label&gt;</code>s, <code>autocomplete="username"</code> / <code>"current-password"</code> and an error summary that links to each field.</li>
+        <li>The Show/Hide toggle is a button with <code>aria-pressed</code>.</li>
+        <li>On phones the navy panel collapses to a 64px brand strip and the form fills the screen.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- 5. Student -->
+  <section class="block" id="student">
+    <div class="sec-head"><span class="eyebrow">Screen 2 · Student side</span><h2>Student dashboard</h2>
+      <p class="muted prose">Built around one question: "is there news about my things?" Potential matches come first, then claim progress, then the counts. All numbers come from the API. The values shown are examples.</p></div>
+    <div class="frame">
+      <div class="frame-bar"><i></i><i></i><i></i>findora.example/dashboard</div>
+      <div class="frame-scroll">
+        <div class="app sd">
+          <div class="appbar">
+            <div class="logo-lockup"><svg width="26" height="29" aria-hidden="true"><use href="#badge"/></svg><span style="font:800 1.05rem var(--display)"><b style="color:#1D4ED8">UCU</b> Findora</span></div>
+            <nav><span class="on">Dashboard</span><span>Browse items</span><span>My reports</span><span>My claims</span></nav>
+            <div class="bell"><svg width="18" height="18"><use href="#i-bell"/></svg><em>3</em></div>
+            <div class="avatar">AN</div>
+          </div>
+          <div class="sd-body">
+            <div class="greet">
+              <div class="stack" style="gap:.15rem"><span class="hint">Tuesday 25 November</span><h3>Good afternoon, Aisha</h3></div>
+              <div style="display:flex;gap:.5rem"><span class="btn ghost"><svg width="16" height="16"><use href="#i-plus"/></svg>I found something</span><span class="btn primary"><svg width="16" height="16"><use href="#i-plus"/></svg>I lost something</span></div>
+            </div>
+            <span class="example-note">Example values</span>
+            <div class="kpis">
+              <div class="kpi"><small>My reports</small><strong>4</strong><span>3 lost · 1 found</span></div>
+              <div class="kpi" style="border-color:#F9A8D4"><small>Potential matches</small><strong style="color:#BE185D">2</strong><span>1 new since yesterday</span></div>
+              <div class="kpi"><small>Active claims</small><strong>1</strong><span>Waiting for review</span></div>
+              <div class="kpi"><small>Returned to me</small><strong>1</strong><span>Approved claims: 2</span></div>
+            </div>
+            <div class="cols">
+              <div class="card">
+                <div class="card-head"><h4>Potential matches for your lost items</h4><a>View all</a></div>
+                <div class="match hot">
+                  <div class="thumb"><svg width="24" height="24" style="color:#5B6475"><use href="#i-calc"/></svg></div>
+                  <div><h5>Calculator <span class="badge b-found">Found</span> <span class="badge b-match">New</span></h5><p>N Block · found 20 Nov · matches your "Casio calculator" lost 20 Nov</p></div>
+                  <div style="display:flex;gap:.75rem;align-items:center"><div class="score">97%<small>strong match</small></div><span class="btn primary" style="padding:.55rem .8rem">Review &amp; claim</span></div>
+                </div>
+                <div class="match">
+                  <div class="thumb"><svg width="24" height="24" style="color:#5B6475"><use href="#i-plug"/></svg></div>
+                  <div><h5>Laptop charger <span class="badge b-found">Found</span></h5><p>Computer Laboratories · found 21 Nov · may match "Black HP laptop charger"</p></div>
+                  <div style="display:flex;gap:.75rem;align-items:center"><div class="score">76%<small>likely match</small></div><span class="btn ghost" style="padding:.55rem .8rem">View</span></div>
+                </div>
+                <div class="card-head" style="margin-top:.4rem"><h4>My claims</h4><a>All claims</a></div>
+                <div class="match" style="grid-template-columns:52px 1fr">
+                  <div class="thumb"><svg width="24" height="24" style="color:#5B6475"><use href="#i-bottle"/></svg></div>
+                  <div class="stack" style="gap:.35rem">
+                    <h5>Blue steel water bottle <span class="badge b-pending">Under review</span></h5>
+                    <div class="steps"><b class="on"></b>Submitted<hr class="on"><b class="on"></b>Under review<hr><b></b>Decision<hr><b></b>Collected</div>
+                  </div>
+                </div>
+              </div>
+              <div class="stack" style="gap:1rem">
+                <div class="card">
+                  <div class="card-head"><h4>Notifications</h4><a>Mark all read</a></div>
+                  <div class="feed">
+                    <div><i class="new"></i><span><strong>Potential match found!</strong> A newly reported calculator may match an item you reported missing.<time>12 min ago</time></span></div>
+                    <div><i class="new"></i><span>Your claim for "Blue steel water bottle" is now being reviewed.<time>2 h ago</time></span></div>
+                    <div><i></i><span>Return confirmed: "Student ID card" was collected at the Dean of Students office.<time>3 days ago</time></span></div>
+                  </div>
+                </div>
+                <div class="card">
+                  <h4>Quick report</h4>
+                  <div class="qa">
+                    <span class="btn ghost"><svg width="16" height="16"><use href="#i-id"/></svg>ID / card</span>
+                    <span class="btn ghost"><svg width="16" height="16"><use href="#i-calc"/></svg>Calculator</span>
+                    <span class="btn ghost"><svg width="16" height="16"><use href="#i-plug"/></svg>Charger</span>
+                    <span class="btn ghost"><svg width="16" height="16"><use href="#i-bottle"/></svg>Bottle</span>
+                  </div>
+                  <span class="hint">These pre-fill the category on the report form.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phones">
+      <div class="phone"><div class="app">
+        <div class="ph-top">
+          <div class="logo-lockup"><svg width="24" height="27" aria-hidden="true"><use href="#badge"/></svg><span style="font:800 1rem var(--display)"><b style="color:#1D4ED8">UCU</b> Findora</span></div>
+          <div class="bell"><svg width="16" height="16"><use href="#i-bell"/></svg><em>3</em></div>
+        </div>
+        <div class="ph-body">
+          <h3 style="font-size:1.15rem;padding-top:.5rem">Hi Aisha</h3>
+          <div class="notice"><strong>Potential match found!</strong><p>A newly reported calculator at N Block may match an item you reported missing.</p><span class="btn primary" style="padding:.55rem">View listing</span></div>
+          <div class="ph-kpis">
+            <div class="kpi"><small>Matches</small><strong style="color:#BE185D">2</strong></div>
+            <div class="kpi"><small>Active claims</small><strong>1</strong></div>
+            <div class="kpi"><small>My reports</small><strong>4</strong></div>
+            <div class="kpi"><small>Returned</small><strong>1</strong></div>
+          </div>
+          <div class="card" style="padding:.75rem"><h4 style="font-size:.85rem">Claim · Water bottle</h4><div class="steps"><b class="on"></b><hr class="on"><b class="on"></b><hr><b></b><hr><b></b><span style="margin-left:.4rem">Under review</span></div></div>
+        </div>
+        <div class="ph-tabs">
+          <span class="on"><svg width="20" height="20"><use href="#i-home"/></svg>Home</span>
+          <span><svg width="20" height="20"><use href="#i-search"/></svg>Browse</span>
+          <span><span class="fab">+</span></span>
+          <span><svg width="20" height="20"><use href="#i-doc"/></svg>Reports</span>
+          <span><svg width="20" height="20"><use href="#i-bell"/></svg>Alerts</span>
+        </div>
+      </div></div>
+      <div class="stack prose" style="flex:1;min-width:min(100%,280px)">
+        <h3>Mobile first, not shrunk</h3>
+        <ul class="clean">
+          <li>A bottom tab bar on phones, with the centre "+" opening a sheet: <em>I lost something</em> / <em>I found something</em>.</li>
+          <li>A new match shows as a card at the top, not a toast, so it's still there when the student comes back.</li>
+          <li>Claim progress is a four-step tracker: Submitted → Under review → Decision → Collected. A rejection shows the admin's reason under the tracker.</li>
+          <li>The report form is one column with a camera-first photo picker (<code>accept="image/*" capture</code>), live upload progress and a warning next to the photo field: "Hide names, ID numbers and serial numbers before you upload."</li>
+          <li>Found-item forms split into two clearly labelled panels: <strong>Everyone can see</strong> and <strong>Only you and the lost-property office can see</strong>.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Admin -->
+  <section class="block" id="admin">
+    <div class="sec-head"><span class="eyebrow">Screen 3 · Administrator side</span><h2>Administrator dashboard</h2>
+      <p class="muted prose">A separate shell at <code>/admin</code> with a navy sidebar, so staff always know they're in the back office. The overview is a work queue first and analytics second: what needs a decision today sits at the top.</p></div>
+    <div class="frame">
+      <div class="frame-bar"><i></i><i></i><i></i>findora.example/admin</div>
+      <div class="frame-scroll">
+        <div class="app ad">
+          <aside class="side">
+            <div class="brand" style="--mark-inner:#172033"><svg width="22" height="25" style="color:#FFFFFF" aria-hidden="true"><use href="#badge-mono"/></svg><span><b>UCU</b> Findora</span><span style="font:600 .6rem var(--body);color:#7D859A;padding:0;margin-left:.2rem">ADMIN</span></div>
+            <span class="on">Overview</span>
+            <small>Cases</small>
+            <span>Claims <em>7</em></span><span>Potential matches <em>4</em></span><span>Lost reports</span><span>Found reports</span><span>Returned items</span>
+            <small>People</small>
+            <span>Students</span><span>Student registry</span><span>Administrators</span>
+            <small>Setup</small>
+            <span>Categories</span><span>Campus locations</span><span>Notifications</span><span>Audit log</span><span>Settings</span>
+          </aside>
+          <div class="ad-main">
+            <div class="ad-top">
+              <div class="input search"><svg width="16" height="16"><use href="#i-search"/></svg>Search items, reference codes, reg. numbers</div>
+              <div style="display:flex;gap:.75rem;align-items:center"><span class="hint">Lost-property officer</span><div class="avatar">JM</div></div>
+            </div>
+            <div class="ad-body">
+              <div class="row-between"><h3 style="font-size:1.25rem">Overview</h3><span class="example-note">Example values</span></div>
+              <div class="kpis6">
+                <div class="kpi alert"><small>Claims to review</small><strong>7</strong><span>2 older than 48 h</span></div>
+                <div class="kpi"><small>Awaiting collection</small><strong>5</strong><span>Approved, not collected</span></div>
+                <div class="kpi"><small>Open found items</small><strong>38</strong><span>In custody</span></div>
+                <div class="kpi"><small>Open lost reports</small><strong>61</strong><span>Last 60 days</span></div>
+                <div class="kpi"><small>Returned (30 d)</small><strong>23</strong><span>Rate 41%</span></div>
+                <div class="kpi"><small>Active students</small><strong>1,204</strong><span>of 1,950 activated</span></div>
+              </div>
+              <div class="ad-cols">
+                <div class="card">
+                  <div class="card-head"><h4>Claims waiting for a decision</h4><a>Open queue</a></div>
+                  <table>
+                    <thead><tr><th>Item</th><th>Claimant</th><th>Competing</th><th>Waiting</th><th></th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Calculator</strong><small class="mono">FD-1800421 · N Block</small></td><td>A. Nakato<small class="mono">J24B05/0123</small></td><td><span class="badge b-pending">2 claims</span></td><td style="color:#B45309;font-weight:600">2 d</td><td><span class="btn soft" style="padding:.45rem .7rem">Review</span></td></tr>
+                      <tr><td><strong>Blue steel water bottle</strong><small class="mono">FD-1800417 · Football Pitch</small></td><td>B. Okello<small class="mono">S23B13/0456</small></td><td>—</td><td>5 h</td><td><span class="btn soft" style="padding:.45rem .7rem">Review</span></td></tr>
+                      <tr><td><strong>Student ID card</strong><small class="mono">FD-1800409 · Main Gate</small></td><td>R. Atim<small class="mono">J23B07/0981</small></td><td>—</td><td>1 h</td><td><span class="btn soft" style="padding:.45rem .7rem">Review</span></td></tr>
+                    </tbody>
+                  </table>
+                  <div class="card-head" style="margin-top:.25rem"><h4>Approved, awaiting collection</h4><a>All</a></div>
+                  <table>
+                    <tbody>
+                      <tr><td><strong>Black umbrella</strong><small>Approved 23 Nov by J. Mukasa</small></td><td><span class="badge b-approved">Approved</span></td><td style="text-align:right"><span class="btn primary" style="padding:.45rem .7rem">Confirm handover</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="stack" style="gap:1rem">
+                  <div class="card">
+                    <div class="card-head"><h4>New potential matches</h4><a>Matches</a></div>
+                    <table><tbody>
+                      <tr><td>Lost "Casio calculator" ↔ Found "Calculator"<small>N Block · same day</small></td><td class="num"><strong style="color:#BE185D">0.97</strong></td></tr>
+                      <tr><td>Lost "HP charger" ↔ Found "Laptop charger"<small>K Block → Computer Labs · 3 days</small></td><td class="num"><strong>0.76</strong></td></tr>
+                    </tbody></table>
+                  </div>
+                  <div class="card">
+                    <h4>Open found items by location</h4>
+                    <div class="bars">
+                      <div class="bar"><span>Paul Mukasa Library</span><div><i style="width:100%"></i></div><b>11</b></div>
+                      <div class="bar"><span>N Block</span><div><i style="width:73%"></i></div><b>8</b></div>
+                      <div class="bar"><span>Canteens</span><div><i style="width:55%"></i></div><b>6</b></div>
+                      <div class="bar"><span>Computer Labs</span><div><i style="width:45%"></i></div><b>5</b></div>
+                      <div class="bar"><span>Football Pitch</span><div><i style="width:27%"></i></div><b>3</b></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="panel"><h4>Claim review screen (next step after "Review")</h4>
+        <p class="muted">Three columns: the public listing, the <strong>finder's confidential details</strong>, and the claimant's evidence, with competing claims stacked as tabs. Approve needs a reason and collection instructions. Reject needs a reason. Both run in one transaction and write to the audit log.</p></div>
+      <div class="panel"><h4>Permissions, enforced on the server</h4>
+        <p class="muted">Three roles: <strong>Super admin</strong> (manages admins, settings, registry imports), <strong>Lost-property officer</strong> (reviews claims, confirms returns, moderates reports, manages locations) and <strong>Viewer</strong> (read-only analytics, for management). The sidebar hides what a role can't do, and the API refuses it with 403 either way.</p></div>
+    </div>
+  </section>
+
+  <!-- 7. ERD -->
+  <section class="block" id="erd">
+    <div class="sec-head"><span class="eyebrow">Stage 3 · Data</span><h2>Database ER diagram</h2>
+      <p class="muted prose">MySQL 8, InnoDB, utf8mb4. Confidential finder details move to their own table, so a public query <em>can't</em> leak them by accident: they have to be joined explicitly, in admin and owner code paths only.</p></div>
+    <div class="diagram">
+<pre class="mermaid">
+erDiagram
+  admin_roles ||--o{ role_permissions : grants
+  permissions ||--o{ role_permissions : in
+  admin_roles ||--o{ users : "role of (admins)"
+  student_registry ||--o| users : "activates"
+  users ||--o| student_profiles : has
+  users ||--o{ sessions : has
+  users ||--o{ password_reset_tokens : requests
+  users ||--o{ item_reports : files
+  categories ||--o{ item_reports : classifies
+  categories ||--o{ categories : parent
+  campus_zones ||--o{ campus_locations : groups
+  campus_locations ||--o{ item_reports : "where"
+  item_reports ||--o| item_confidential : "private details"
+  item_reports ||--o{ item_images : has
+  item_reports ||--o{ item_claims : "claimed via (found only)"
+  users ||--o{ item_claims : submits
+  item_reports ||--o{ item_matches : "as lost"
+  item_reports ||--o{ item_matches : "as found"
+  item_claims ||--o| item_returns : "completed by"
+  users ||--o{ notifications : receives
+  users ||--o{ audit_logs : performs
+
+  users {
+    int id PK
+    varchar registration_number UK "students, normalised"
+    varchar staff_id UK "admins"
+    varchar email UK "nullable"
+    char password_hash "bcrypt"
+    enum account_type "student|admin"
+    int role_id FK "admins only"
+    enum status "pending|active|deactivated|locked"
+    tinyint failed_logins
+    datetime locked_until
+    datetime email_verified_at
+    datetime password_changed_at
+    datetime last_login_at
+  }
+  student_registry {
+    varchar registration_number PK
+    varchar full_name
+    varchar university_email
+    varchar programme
+    enum status "enrolled|withdrawn|graduated"
+    int import_batch_id
+  }
+  student_profiles {
+    int user_id PK
+    varchar full_name
+    varchar phone "private"
+    varchar programme
+  }
+  sessions {
+    int id PK
+    int user_id FK
+    char token_hash UK
+    bool remember
+    datetime expires_at
+    datetime revoked_at
+  }
+  password_reset_tokens {
+    int id PK
+    int user_id FK
+    char token_hash UK
+    char code_hash
+    tinyint attempts
+    datetime expires_at
+    datetime used_at
+  }
+  admin_roles {
+    int id PK
+    varchar name UK
+  }
+  permissions {
+    int id PK
+    varchar code UK "claims.decide ..."
+  }
+  role_permissions {
+    int role_id PK
+    int permission_id PK
+  }
+  categories {
+    int id PK
+    int parent_id FK
+    varchar name
+    bool is_active
+  }
+  campus_zones {
+    int id PK
+    varchar name
+  }
+  campus_locations {
+    int id PK
+    int zone_id FK
+    varchar name UK
+    enum kind "library|hall|lab|gate|block|sport|dining|other"
+    bool is_active
+    smallint sort_order
+  }
+  item_reports {
+    int id PK
+    char ref_code UK "FD-1800421"
+    int user_id FK
+    enum type "lost|found"
+    varchar title
+    varchar title_norm "for matching"
+    int category_id FK
+    text description "public"
+    date event_date
+    int location_id FK
+    varchar location_detail
+    varchar holding_info "found: where it is now"
+    enum status "open|awaiting_collection|returned|closed|removed"
+    datetime updated_at
+  }
+  item_confidential {
+    int report_id PK
+    text identifying_details
+  }
+  item_images {
+    int id PK
+    int report_id FK
+    char storage_key UK "random"
+    varchar mime_type
+    int size_bytes
+    bool is_public
+  }
+  item_claims {
+    int id PK
+    int report_id FK
+    int claimant_id FK
+    text evidence "private"
+    enum status "pending|approved|rejected|withdrawn|collected"
+    text decision_reason
+    varchar collection_instructions
+    int reviewed_by FK
+    int approved_lock UK "generated"
+  }
+  item_matches {
+    int id PK
+    int lost_report_id FK
+    int found_report_id FK
+    decimal score
+    json breakdown
+    enum status "suggested|dismissed|claimed|expired"
+    datetime notified_at
+  }
+  item_returns {
+    int id PK
+    int claim_id FK "UK"
+    int report_id FK "UK"
+    int confirmed_by FK
+    datetime confirmed_at
+    varchar id_checked
+  }
+  notifications {
+    int id PK
+    int user_id FK
+    varchar type
+    varchar title
+    varchar body
+    varchar link
+    varchar dedupe_key
+    datetime read_at
+  }
+  audit_logs {
+    bigint id PK
+    int actor_id FK
+    varchar action
+    varchar entity_type
+    int entity_id
+    json before_after
+    varchar ip
+  }
+</pre>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Constraint or index</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>UNIQUE users(registration_number)</code></td><td>One account per student. Duplicate activation is rejected.</td></tr>
+          <tr><td><code>UNIQUE item_claims(report_id, claimant_id)</code> + <code>UNIQUE(approved_lock)</code></td><td>One claim per student per item, and at most one approved claim per item. Kept from v1.</td></tr>
+          <tr><td><code>UNIQUE item_matches(lost_report_id, found_report_id)</code></td><td>A pair is stored once, so re-scoring updates it in place.</td></tr>
+          <tr><td><code>UNIQUE notifications(user_id, dedupe_key)</code></td><td>"match:41:88" can only be sent once. This is how duplicate notifications are prevented.</td></tr>
+          <tr><td><code>UNIQUE item_returns(report_id)</code></td><td>An item can only be returned once.</td></tr>
+          <tr><td><code>INDEX item_reports(type, status, category_id, event_date)</code>, <code>(location_id)</code>, <code>FULLTEXT(title, description)</code></td><td>Search filters and candidate selection for matching.</td></tr>
+          <tr><td><code>INDEX item_claims(status, created_at)</code>, <code>notifications(user_id, read_at)</code>, <code>audit_logs(entity_type, entity_id)</code></td><td>Admin queue, unread count, per-item history.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 8. Architecture -->
+  <section class="block" id="arch">
+    <div class="sec-head"><span class="eyebrow">System design</span><h2>Application architecture</h2>
+      <p class="muted prose">A modular monolith: one Express API, one React single-page app and one MySQL database. That's the right size for one campus. It's simple to run and back up, and it can be split up later if needed.</p></div>
+    <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  subgraph Client["React SPA (Vite)"]
+    S["Student app<br/>/ , /dashboard, /report, /items, /claims"]
+    A["Admin app<br/>/admin/* (lazy-loaded)"]
+  end
+  subgraph API["Express API /api/v1"]
+    MW["helmet · CORS allowlist · rate limits<br/>session auth · requirePermission() · zod"]
+    AU["auth"]
+    RP["reports + images"]
+    CL["claims"]
+    MT["matching service"]
+    NT["notifications"]
+    AD["admin: users, registry,<br/>locations, categories, stats"]
+    AL["audit"]
+  end
+  DB[("MySQL 8")]
+  FS[("Image storage<br/>private disk / S3-compatible")]
+  MAIL["SMTP / transactional email<br/>(approved provider)"]
+  S -->|"HTTPS, httpOnly cookie"| MW
+  A --> MW
+  MW --> AU & RP & CL & AD
+  RP -->|"on create / update"| MT
+  MT --> NT
+  CL --> NT
+  AU --> MAIL
+  NT -.->|"optional"| MAIL
+  AU & RP & CL & MT & NT & AD & AL --> DB
+  RP --> FS
+</pre>
+    </div>
+    <div class="grid-2">
+      <div class="panel" style="min-width:0">
+        <h4>Server layout</h4>
+<pre class="code">server/src/
+  app.js            express setup, middleware order
+  config.js         env parsing (fails fast if missing)
+  db.js             mysql2 pool + withTransaction()
+  middleware/       auth, permissions, rateLimits, upload
+  modules/
+    auth/           routes, service, tokens, mailer
+    reports/        routes, service, publicView()
+    images/         storage adapter (disk | s3)
+    claims/         routes, service (transactions)
+    matching/       scorer.js (pure), service.js
+    notifications/  routes, service (dedupe)
+    admin/          users, registry import, locations,
+                    categories, stats, audit
+  utils/            errors, normalise, refCode
+database/migrations/  001_v1_baseline.sql … 00N_*.sql
+database/seeds/       fictional students, items</pre>
+      </div>
+      <div class="panel" style="min-width:0">
+        <h4>Client layout</h4>
+<pre class="code">client/src/
+  app/          router, AuthProvider, api (axios)
+  design/       tokens.css, Button, Field, Badge,
+                Card, Table, Modal, Toast, EmptyState
+  features/
+    auth/       Login, Activate, Forgot, Reset
+    dashboard/  StudentDashboard
+    reports/    ReportForm, ImageUploader, Browse
+    claims/     ClaimForm, ClaimTracker
+    notifications/ Bell, NotificationCentre
+    admin/      AdminShell, Overview, ClaimReview,
+                Matches, Students, Registry,
+                Locations, Categories, AuditLog</pre>
+        <p class="muted">CSS: we propose <strong>Tailwind</strong> configured with the tokens above, so spacing and colour stay consistent across about 40 screens. The other option is to keep v1's plain CSS with variables. See decision 4.</p>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Area</th><th>Key endpoints (all under <code>/api/v1</code>)</th><th>Who</th></tr></thead>
+        <tbody>
+          <tr><td>Auth</td><td><code>POST /auth/login</code> · <code>/auth/logout</code> · <code>/auth/activate/start</code> · <code>/auth/activate/verify</code> · <code>/auth/password/forgot</code> · <code>/auth/password/verify</code> · <code>/auth/password/reset</code> · <code>POST /admin/auth/login</code></td><td>Public</td></tr>
+          <tr><td>Reports</td><td><code>GET /items</code> (search, filters) · <code>GET /items/:ref</code> · <code>POST /items</code> · <code>PATCH /items/:ref</code> · <code>POST /items/:ref/images</code> · <code>GET /images/:key</code> (access-checked)</td><td>Public read, student write (owner only)</td></tr>
+          <tr><td>Matching</td><td><code>GET /me/matches</code> · <code>POST /me/matches/:id/dismiss</code></td><td>Owner of the lost report</td></tr>
+          <tr><td>Claims</td><td><code>POST /items/:ref/claims</code> · <code>GET /me/claims</code> · <code>POST /me/claims/:id/withdraw</code></td><td>Student</td></tr>
+          <tr><td>Notifications</td><td><code>GET /me/notifications</code> · <code>GET /me/notifications/unread-count</code> · <code>POST /me/notifications/read</code></td><td>Student, admin</td></tr>
+          <tr><td>Admin</td><td><code>/admin/claims/:id/approve|reject</code> · <code>/admin/claims/:id/confirm-return</code> · <code>/admin/matches</code> · <code>/admin/students</code> · <code>/admin/registry/import</code> (CSV) · <code>/admin/admins</code> · <code>/admin/locations</code> · <code>/admin/categories</code> · <code>/admin/stats</code> · <code>/admin/audit</code></td><td>By permission</td></tr>
+          <tr><td>Ops</td><td><code>GET /health</code> (process) · <code>GET /health/ready</code> (database reachable)</td><td>Monitoring</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 9. Matching -->
+  <section class="block" id="matching">
+    <div class="sec-head"><span class="eyebrow">Module 7</span><h2>The matching engine</h2>
+      <p class="muted prose">Rule-based, explainable and deterministic. No AI service. Every match stores its score breakdown, so a student sees <em>why</em> ("same category · same place · same day") and an admin can check whether the rules are well tuned.</p></div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h4>1 · Hard filters (candidate selection in SQL)</h4>
+        <ul class="clean">
+          <li>Compare <strong>lost ↔ found only</strong>. Never lost↔lost or found↔found.</li>
+          <li>Both reports <code>status = 'open'</code>. Returned, closed or removed items never match.</li>
+          <li>Different reporters. A finder is never told they own what they reported.</li>
+          <li>Date window: <code>found_date ≥ lost_date − 1 day</code> and <code>found_date − lost_date ≤ 30 days</code>.</li>
+          <li>Same top-level category <em>or</em> a title-token overlap. This keeps the candidate set small (an indexed query, tens of rows).</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h4>2 · Weighted score (pure function, unit-tested)</h4>
+        <div class="formula">score = 0.35·name + 0.25·category<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.20·location + 0.15·date<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ 0.05·description</div>
+        <p class="muted">The weights live in <code>settings</code> so an admin can tune them. Each factor is between 0 and 1.</p>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Factor</th><th>How it's measured</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Name</strong> (35%)</td><td>Normalise (lower-case, strip punctuation, singularise, synonym map: <em>phone↔mobile↔smartphone, charger↔adapter, bottle↔flask, ID↔identity card</em>), drop colour and brand words. Then <code>0.6 × token containment + 0.4 × trigram Dice</code>. Containment uses the shorter title, so "Calculator" against "Casio calculator" still scores high.</td></tr>
+          <tr><td><strong>Category</strong> (25%)</td><td>Same category = 1. Same parent category (for example Electronics) = 0.5. Otherwise 0.</td></tr>
+          <tr><td><strong>Location</strong> (20%)</td><td>Same location = 1. Same zone (for example K Block and Computer Laboratories in the "Academic core") = 0.5. Either side "Other / not listed" = 0.3. Otherwise 0.</td></tr>
+          <tr><td><strong>Date</strong> (15%)</td><td>Δ = days between the dates. Δ ≤ 1 → 1, then <code>1 − (Δ − 1) / 13</code>, reaching 0 at Δ = 14.</td></tr>
+          <tr><td><strong>Description</strong> (5%)</td><td>Jaccard overlap of public description keywords after removing stop-words. It never uses confidential details.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Worked example</th><th class="num">Name</th><th class="num">Cat.</th><th class="num">Loc.</th><th class="num">Date</th><th class="num">Desc.</th><th class="num">Score</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Lost "Calculator", N Block, 20 Nov ↔ Found "Calculator", N Block, 20 Nov</td><td class="num">1.00</td><td class="num">1</td><td class="num">1</td><td class="num">1.00</td><td class="num">0.40</td><td class="num"><strong>0.97</strong></td><td>Notify owner</td></tr>
+          <tr><td>Lost "Black HP laptop charger", K Block, 18 Nov ↔ Found "Laptop charger", Computer Labs, 21 Nov</td><td class="num">0.78</td><td class="num">1</td><td class="num">0.5</td><td class="num">0.85</td><td class="num">0.20</td><td class="num"><strong>0.76</strong></td><td>Notify owner</td></tr>
+          <tr><td>Lost "Water bottle", Nkoyoyo Hall, 3 Nov ↔ Found "Flask", Football Pitch, 14 Nov</td><td class="num">0.62</td><td class="num">1</td><td class="num">0</td><td class="num">0.23</td><td class="num">0.00</td><td class="num"><strong>0.50</strong></td><td>Listed only</td></tr>
+          <tr><td>Lost "Calculator", N Block ↔ Found "Calculus textbook", N Block, same day</td><td class="num">0.18</td><td class="num">0</td><td class="num">1</td><td class="num">1.00</td><td class="num">0.00</td><td class="num"><strong>0.41</strong></td><td>Discarded</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-3">
+      <div class="panel"><span class="tag">≥ 0.70</span><h4>Strong / likely match</h4><p class="muted">Stored as <code>suggested</code>. The lost report's owner gets an in-app notification (and email, if enabled) once per pair. The match also appears in the admin match queue.</p></div>
+      <div class="panel"><span class="tag">0.50 – 0.69</span><h4>Possible match</h4><p class="muted">Stored and shown under "Potential matches" on the student dashboard, with no push notification. This keeps false alerts down.</p></div>
+      <div class="panel"><span class="tag">&lt; 0.50</span><h4>Not a match</h4><p class="muted">Not stored. Thresholds are settings and will be calibrated against about 200 fictional seed reports before launch.</p></div>
+    </div>
+
+    <div class="panel">
+      <h4>When it runs and how duplicates are prevented</h4>
+      <ul class="clean">
+        <li><strong>On create:</strong> a new found report is scored against open lost reports, and a new lost report against open found items. The lost-side owner immediately sees existing matches.</li>
+        <li><strong>On update</strong> (title, category, location, date, description): the pairs for that report are re-scored with <code>INSERT … ON DUPLICATE KEY UPDATE</code>. A pair whose score drops below 0.50 is set to <code>expired</code>.</li>
+        <li><strong>Notify once:</strong> a notification is sent only when <code>notified_at IS NULL</code> and the score crosses 0.70. It's written with <code>dedupe_key = "match:{lost}:{found}"</code> under a unique index, so retries and re-scores can't send it twice.</li>
+        <li><strong>Return closes everything:</strong> confirming a return sets the item to <code>returned</code>, expires its matches, closes the linked lost report (if the claimant had one) and blocks new claims. All of it happens in one transaction.</li>
+        <li>The student can <strong>dismiss</strong> a match ("not mine"). It's hidden and never re-notified.</li>
+        <li>Matching runs in-process after the report transaction commits. A nightly sweep re-scores the date-window edges, so nothing is missed if a request fails halfway.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 10. Auth -->
+  <section class="block" id="auth">
+    <div class="sec-head"><span class="eyebrow">Security</span><h2>Authentication, activation and password recovery</h2>
+      <p class="muted prose">We have no verified connection to UCU's student systems, so v2 uses an <strong>administrator-managed student registry</strong>. Staff import a CSV of registration numbers, names and university emails from an authorised export, and only numbers in the registry can be activated. If UCU later approves an integration (for example SSO), it can replace the registry import without changing the rest of the system.</p></div>
+    <div class="grid-2">
+      <div class="panel">
+        <h4>Student activation (replaces open sign-up)</h4>
+        <ol class="clean" style="padding-left:1.25rem">
+          <li>The student enters their registration number and full name.</li>
+          <li>If the number is in the registry, enrolled and not yet activated, a 6-digit code goes to the <strong>university email on file</strong>. The screen always says "If those details match our records, we've sent a code to your university email", whether or not they matched.</li>
+          <li>The student enters the code (10 minutes, 5 tries), then sets a password (at least 10 characters, checked against a common-password list).</li>
+          <li>The account is created as <code>active</code> and signed in. The action is logged.</li>
+        </ol>
+        <p class="muted">No university email on file: the student goes to the lost-property office with their ID card, and an officer issues a one-time activation link. That action is also logged.</p>
+      </div>
+      <div class="panel">
+        <h4>Administrator accounts</h4>
+        <ul class="clean">
+          <li>There's no self-registration. A super admin creates an admin account and the new admin gets a one-time "set your password" link.</li>
+          <li>Separate endpoint <code>/admin/auth/login</code>, using a staff ID. Sessions last 4 hours, and admins re-enter their password for sensitive actions (creating admins, registry import).</li>
+          <li>Deactivating an account revokes all of its sessions immediately.</li>
+          <li>Phase 2 option: TOTP two-factor for admins.</li>
+          <li>The first super admin is created by a one-off CLI script (<code>npm run admin:create</code>), never by seed data in production.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="diagram">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor St as Student
+  participant UI as Findora web
+  participant API as API
+  participant DB as MySQL
+  participant M as Email
+  St->>UI: Forgot password, enter reg. number
+  UI->>API: POST /auth/password/forgot
+  API->>API: rate limit (3 per number per hour, 10 per IP)
+  API->>DB: find active user + verified email
+  alt account found
+    API->>DB: store sha256(token), sha256(code), expires = now + 15 min
+    API->>M: send 6-digit code + one-time link
+  end
+  API-->>UI: same 202 response either way
+  St->>UI: enter code (or open link)
+  UI->>API: POST /auth/password/verify
+  API->>DB: check hash, expiry, attempts below 5
+  API-->>UI: short-lived reset ticket
+  St->>UI: new password twice
+  UI->>API: POST /auth/password/reset
+  API->>DB: TRANSACTION: update hash, mark token used, delete other tokens, revoke ALL sessions, audit log
+  API->>M: "Your password was changed" notice
+  API-->>UI: done, sign in again
+</pre>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Control</th><th>Implementation</th></tr></thead>
+        <tbody>
+          <tr><td>Password storage</td><td>bcrypt, cost 12 (v1 already does this). Passwords are never logged or emailed.</td></tr>
+          <tr><td>Sessions</td><td>A random 256-bit token in an httpOnly, Secure, SameSite=Lax cookie. Only the SHA-256 hash is stored. They're revoked on logout, password reset and deactivation.</td></tr>
+          <tr><td>CSRF</td><td>SameSite cookie plus an Origin header check on every state-changing request.</td></tr>
+          <tr><td>Enumeration</td><td>Login, activation and forgot-password responses are generic, with similar response times.</td></tr>
+          <tr><td>Authorisation</td><td><code>requirePermission('claims.decide')</code> on admin routes. Object-level checks in services (owner of report, owner of claim).</td></tr>
+          <tr><td>Uploads</td><td>JPEG, PNG and WebP only. The file type is checked from its contents, not the name. 5 MB limit, at most 4 images. Images are re-encoded with sharp, which strips EXIF and GPS data. Files get random 32-byte keys, live outside the web root and are served through an access-checked route.</td></tr>
+          <tr><td>Data exposure</td><td>Public queries come from one <code>publicView()</code> select list, and tests assert that responses contain no confidential fields, emails or phone numbers.</td></tr>
+          <tr><td>Audit</td><td>Every admin decision, return, account change, registry import and password reset is recorded, with before/after values and the IP address.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 11. Roadmap -->
+  <section class="block" id="roadmap">
+    <div class="sec-head"><span class="eyebrow">Delivery</span><h2>Implementation roadmap</h2>
+      <p class="muted prose">Each phase ends with tests passing and a demo of a working flow, and each is its own set of commits. Durations assume one developer working with Claude.</p></div>
+    <div class="phases">
+      <div class="phase"><div class="when">Phase 0<span>½ day</span></div><div><h4>Clean-up and baseline</h4><p class="muted">.gitignore, untrack node_modules, migration runner, freeze the v1 schema as <code>001_baseline</code>, make sure the 30 existing tests pass.</p></div></div>
+      <div class="phase"><div class="when">Phase 1<span>2–3 days</span></div><div><h4>Design system and shell</h4><p class="muted">Tokens, Tailwind config, component library, landing page, student shell and admin shell with responsive navigation.</p></div></div>
+      <div class="phase"><div class="when">Phase 2<span>3 days</span></div><div><h4>Identity</h4><p class="muted">Registry table and CSV import, registration-number login, activation, forgot/reset with email (a local mail catcher in development), roles and permissions, admin accounts, lockout, audit log.</p></div></div>
+      <div class="phase"><div class="when">Phase 3<span>3 days</span></div><div><h4>Reports, locations and images</h4><p class="muted">Seed the 16 campus locations and zones, manage locations and categories, split out confidential details, multi-image upload with progress, search and filters.</p></div></div>
+      <div class="phase"><div class="when">Phase 4<span>3 days</span></div><div><h4>Matching and notifications</h4><p class="muted">Scorer with table-driven unit tests from the worked examples, match service, dedupe, notification centre with unread count, optional email, threshold calibration on seed data.</p></div></div>
+      <div class="phase"><div class="when">Phase 5<span>2 days</span></div><div><h4>Claims, review and returns</h4><p class="muted">Port the v1 flows to the new schema, claim tracker, three-column review screen, the item_returns record, transactions and competing-claim tests.</p></div></div>
+      <div class="phase"><div class="when">Phase 6<span>2 days</span></div><div><h4>Admin analytics and management</h4><p class="muted">Overview from live queries, students, admins, matches, returned items, audit log and settings.</p></div></div>
+      <div class="phase"><div class="when">Phase 7<span>2–3 days</span></div><div><h4>QA</h4><p class="muted">API tests for every rule in the brief, Playwright end-to-end tests at 375 / 768 / 1366 px, axe accessibility scan, keyboard pass, Postman collection, a security checklist.</p></div></div>
+      <div class="phase"><div class="when">Phase 8<span>1–2 days</span></div><div><h4>Deployment</h4><p class="muted">Production config, managed MySQL with daily backups and a tested restore, object storage for images, health checks, structured logs and error monitoring, CORS allowlist, README and runbook.</p></div></div>
+    </div>
+  </section>
+
+  <!-- 12. Decisions -->
+  <section class="block" id="decisions">
+    <div class="sec-head"><span class="eyebrow">Before we build</span><h2>Decisions we need from you</h2></div>
+    <div class="decisions">
+      <div class="dec"><div class="stack" style="gap:.25rem"><h4>University approval for the name and badge</h4><p class="muted"><strong>UCU Findora</strong> uses the university’s name and a badge-style mark. Who at UCU should approve this before launch, and should we show the footer disclaimer until then?</p></div></div>
+      <div class="dec"><div class="stack" style="gap:.25rem"><h4>Registration number format and the registry source</h4><p class="muted">What's the exact format (please share a real one with digits changed), and can the registrar provide a CSV with university emails? If there's no email, recovery goes through the office in person.</p></div></div>
+      <div class="dec"><div class="stack" style="gap:.25rem"><h4>Email delivery</h4><p class="muted">Activation and password reset need an approved sender (a university SMTP relay or a transactional email service). Development uses a local mail catcher, so this can wait until deployment.</p></div></div>
+      <div class="dec"><div class="stack" style="gap:.25rem"><h4>Tailwind or plain CSS</h4><p class="muted">We recommend Tailwind with the tokens above. Plain CSS keeps v1's approach but is harder to keep consistent across the admin screens.</p></div></div>
+      <div class="dec"><div class="stack" style="gap:.25rem"><h4>Where found items are physically held</h4><p class="muted">One central office (the "Dean of Students" in the mock-ups is an assumption), or the finder keeps the item until a claim is approved? This changes the found-item form and the collection instructions.</p></div></div>
+      <div class="dec"><div class="stack" style="gap:.25rem"><h4>Hosting target</h4><p class="muted">v1 includes a Render blueprint. For v2 we need managed MySQL plus object storage. Is the plan a university server or a cloud host?</p></div></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Prepared for review, 25 November 2026. UCU Findora is a proposed name. It is not an official Uganda Christian University service until the university approves it. All people, registration numbers and figures in the mock-ups are made up.</p>
+  </footer>
+</div>
