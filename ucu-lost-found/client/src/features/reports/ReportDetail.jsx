@@ -11,6 +11,7 @@ import { ErrorSummary } from '../../design/forms';
 import { Dialog } from '../../design/data';
 import { categoryIcon } from '../../design/ItemCard';
 import { validateClaim } from '../../validation';
+import MatchList, { useMatches } from '../matches/MatchList';
 
 const CUSTODY = {
   lost_property_office: 'At the lost-property office',
@@ -99,6 +100,7 @@ export default function ReportDetail() {
         </div>
       </div>
 
+      {report.isOwner && !found && report.status === 'open' && <OwnerMatches reportId={report.id} />}
       {found && !report.isOwner && !isAdmin && <ClaimBox report={report} user={user} onDone={(msg) => { setFlash(msg); load(); }} />}
       {!found && !report.isOwner && report.status === 'open' && !isAdmin && (
         <Card className="flex flex-col gap-2 p-5">
@@ -116,6 +118,19 @@ export default function ReportDetail() {
         </div>
       </Dialog>
     </Page>
+  );
+}
+
+function OwnerMatches({ reportId }) {
+  const { items, error, dismiss } = useMatches(reportId);
+  return (
+    <Card as="section" aria-labelledby="owner-matches" className="flex flex-col gap-3 p-5">
+      <h2 id="owner-matches" className="text-lg font-bold">Possible matches</h2>
+      {error && <Notice type="error">{error}</Notice>}
+      {!items && !error && <Spinner label="Looking for matches…" />}
+      {items?.length === 0 && <p className="text-muted">Nothing yet. We check every new found report against this one and will notify you if a strong match appears.</p>}
+      {items?.length > 0 && <MatchList items={items} onDismiss={dismiss} showLost={false} />}
+    </Card>
   );
 }
 

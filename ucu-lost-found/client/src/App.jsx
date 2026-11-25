@@ -14,6 +14,8 @@ import ReportForm from './features/reports/ReportForm';
 import MyReports from './features/reports/MyReports';
 import Locations from './features/admin/Locations';
 import Categories from './features/admin/Categories';
+import Matches from './features/admin/Matches';
+import NotificationsPage from './features/notifications/NotificationsPage';
 import Login from './features/auth/Login';
 import Activate from './features/auth/Activate';
 import Recover from './features/auth/Recover';
@@ -69,6 +71,7 @@ export default function App() {
         <Route path="reports/:id" element={<ReportDetail />} />
         <Route path="reports/:id/edit" element={<RequireAuth><ReportForm key="edit" /></RequireAuth>} />
         <Route path="my/reports" element={<RequireAuth><MyReports /></RequireAuth>} />
+        <Route path="notifications" element={<RequireAuth><NotificationsPage /></RequireAuth>} />
         <Route element={<LegacyFrame />}>
           <Route path="my/claims" element={<RequireAuth><MyClaims /></RequireAuth>} />
           <Route path="my/claims/:id" element={<RequireAuth><ClaimDetail /></RequireAuth>} />
@@ -82,6 +85,7 @@ export default function App() {
         <Route path="registry" element={<RequirePermission permission="students.manage"><Registry /></RequirePermission>} />
         <Route path="admins" element={<RequirePermission permission="admins.manage"><Admins /></RequirePermission>} />
         <Route path="audit" element={<RequirePermission permission="audit.view"><AuditLog /></RequirePermission>} />
+        <Route path="matches" element={<RequirePermission permission="claims.review"><Matches /></RequirePermission>} />
         <Route path="locations" element={<RequirePermission permission="locations.manage"><Locations /></RequirePermission>} />
         <Route path="categories" element={<RequirePermission permission="categories.manage"><Categories /></RequirePermission>} />
       </Route>

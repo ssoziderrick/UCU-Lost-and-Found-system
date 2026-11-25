@@ -2,7 +2,7 @@
 // Only sections that exist, and that the signed-in role may use, are listed.
 import { useEffect, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardList, ExternalLink, FolderOpen, FolderTree, IdCard, LogOut, MapPinned, Menu, ScrollText, ShieldCheck, Users, X } from 'lucide-react';
+import { ClipboardList, ExternalLink, FolderOpen, FolderTree, IdCard, LogOut, MapPinned, Menu, ScrollText, ShieldCheck, Sparkles, Users, X } from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { Logo } from '../design/Logo';
 import { cx } from '../design/primitives';
@@ -14,6 +14,7 @@ const SECTIONS = [
     heading: 'Cases',
     items: [
       { to: '/admin?tab=claims', label: 'Claims queue', icon: ClipboardList, permission: 'claims.review', match: (p, q) => p.startsWith('/admin/claims') || (p === '/admin' && (q.get('tab') || 'claims') === 'claims') },
+      { to: '/admin/matches', label: 'Potential matches', icon: Sparkles, permission: 'claims.review', match: (p) => p === '/admin/matches' },
       { to: '/admin?tab=reports', label: 'All reports', icon: FolderOpen, permission: 'reports.moderate', match: (p, q) => p === '/admin' && q.get('tab') === 'reports' },
     ],
   },

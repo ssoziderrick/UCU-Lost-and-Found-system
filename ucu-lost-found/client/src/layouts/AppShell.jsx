@@ -8,6 +8,7 @@ import { useAuth } from '../AuthContext';
 import { Logo } from '../design/Logo';
 import { Button, cx } from '../design/primitives';
 import UserMenu from './UserMenu';
+import NotificationBell from '../features/notifications/NotificationBell';
 import useRouteFocus from './useRouteFocus';
 
 const STUDENT_NAV = [
@@ -51,6 +52,7 @@ export default function AppShell() {
               <div className="ml-auto flex items-center gap-2">
                 {/* Wrapped: Button sets display itself, so `hidden` on it would lose to `inline-flex`. */}
                 <span className="hidden md:block"><Button to="/reports/new" icon={Plus}>Report an item</Button></span>
+                <NotificationBell />
                 <UserMenu user={user} onLogout={handleLogout} />
               </div>
             </>
