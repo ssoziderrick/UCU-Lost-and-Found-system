@@ -1,4 +1,4 @@
-# UCU Campus Lost & Found
+ UCU Campus Lost & Found
 
 A responsive web application for Uganda Christian University students to report lost and found items, search listings, submit **private** ownership claims, and for an administrator to review claims and confirm returns.
 
