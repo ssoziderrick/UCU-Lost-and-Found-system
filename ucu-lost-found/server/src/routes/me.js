@@ -4,6 +4,8 @@ const express = require('express');
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
 const { notFound } = require('../utils/errors');
+const { refCode } = require('./reports');
+const { imageUrl } = require('../services/imageStore');
 
 const me = express.Router();
 const claims = express.Router();
@@ -13,14 +15,18 @@ me.use(requireAuth);
 me.get('/reports', async (req, res) => {
   const rows = await db.query(
     `SELECT r.id, r.type, r.title, r.status, r.event_date AS eventDate, r.created_at AS createdAt,
-            r.private_details AS privateDetails, r.returned_at AS returnedAt,
-            c.name AS category, l.name AS location
+            rc.identifying_details AS identifyingDetails, r.returned_at AS returnedAt, r.custody,
+            c.name AS category, l.name AS location,
+            (SELECT ri.storage_key FROM report_images ri WHERE ri.report_id = r.id AND ri.is_cover = 1) AS coverKey,
+            (SELECT COUNT(*) FROM report_images ri WHERE ri.report_id = r.id) AS imageCount,
+            (SELECT COUNT(*) FROM claims cl WHERE cl.report_id = r.id AND cl.status = 'pending') AS pendingClaims
        FROM reports r
        JOIN categories c ON c.id = r.category_id
-       JOIN locations  l ON l.id = r.location_id
+       JOIN campus_locations l ON l.id = r.location_id
+       LEFT JOIN report_confidential rc ON rc.report_id = r.id
       WHERE r.user_id = ?
       ORDER BY r.created_at DESC, r.id DESC`, [req.user.id]);
-  res.json({ items: rows });
+  res.json({ items: rows.map(({ coverKey, ...r }) => ({ ...r, refCode: refCode(r.id), coverImage: coverKey ? { url: imageUrl(coverKey) } : null })) });
 });
 
 me.get('/claims', async (req, res) => {

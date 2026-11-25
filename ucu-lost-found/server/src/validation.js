@@ -104,10 +104,49 @@ const schemas = {
     title: trimmed(3, 120, 'Title', ', e.g. "Keys with blue keyring"'),
     categoryId: positiveId('category'),
     description: trimmed(10, 1000, 'Public description', ' — describe the item without private identifying marks'),
-    privateDetails: optionalText(1000, 'Private identifying details'),
+    identifyingDetails: optionalText(1000, 'Identifying details'),
     eventDate: isoDate,
     locationId: positiveId('campus location'),
     locationDetail: optionalText(150, 'Location detail'),
+    custody: z.enum(['with_finder', 'lost_property_office', 'other'], { error: 'Choose where the item is now.' })
+      .optional().or(z.literal('')).transform((v) => v || null),
+    custodyNote: optionalText(255, 'Note about where the item is'),
+  }),
+
+  imagePatch: z.object({
+    visibility: z.enum(['public', 'private'], { error: 'Visibility must be public or private.' }).optional(),
+    isCover: z.boolean().optional(),
+  }),
+
+  location: z.object({
+    name: trimmed(2, 100, 'Location name'),
+    zoneId: positiveId('zone'),
+    kind: z.enum(['library', 'lecture', 'lab', 'gate', 'sports', 'hall', 'dining', 'chapel', 'health', 'office', 'outdoor', 'other'], { error: 'Choose a type of place.' }),
+    description: optionalText(255, 'Description'),
+    sortOrder: z.coerce.number().int().min(0).max(9999).optional().default(0),
+  }),
+
+  locationPatch: z.object({
+    name: trimmed(2, 100, 'Location name').optional(),
+    zoneId: positiveId('zone').optional(),
+    kind: z.enum(['library', 'lecture', 'lab', 'gate', 'sports', 'hall', 'dining', 'chapel', 'health', 'office', 'outdoor', 'other']).optional(),
+    description: optionalText(255, 'Description'),
+    sortOrder: z.coerce.number().int().min(0).max(9999).optional(),
+    isActive: z.boolean().optional(),
+  }),
+
+  zone: z.object({ name: trimmed(2, 80, 'Zone name') }),
+
+  category: z.object({
+    name: trimmed(2, 60, 'Category name'),
+    parentId: z.coerce.number().int().positive().optional().nullable(),
+  }),
+
+  categoryPatch: z.object({
+    name: trimmed(2, 60, 'Category name').optional(),
+    parentId: z.coerce.number().int().positive().nullable().optional(),
+    isActive: z.boolean().optional(),
+    sortOrder: z.coerce.number().int().min(0).max(9999).optional(),
   }),
 
   claim: z.object({

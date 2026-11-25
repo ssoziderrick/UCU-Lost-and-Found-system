@@ -33,7 +33,7 @@ async function loginAdmin(staffId = 'STAFF-0001', password = ADMIN_PW) {
 
 const validFound = {
   type: 'found', title: 'Blue umbrella', categoryId: 10, description: 'Blue folding umbrella left by the door.',
-  privateDetails: 'Handle has a crack and a name tag reading "JK".', eventDate: '2026-11-01', locationId: 2,
+  identifyingDetails: 'Handle has a crack and a name tag reading "JK".', eventDate: '2026-11-01', locationId: 2,
 };
 
 let okello; let namusoke; let mugisha; let atim; let kato; let admin;
@@ -112,14 +112,14 @@ describe('Reports, privacy and search', () => {
     expect(created.status).toBe(201);
     const list = await request(app).get('/api/reports').query({ q: 'umbrella' });
     expect(JSON.stringify(list.body)).not.toMatch(/JK/);
-    expect(list.body.items[0]).not.toHaveProperty('privateDetails');
+    expect(list.body.items[0]).not.toHaveProperty('identifyingDetails');
     expect(list.body.items[0]).not.toHaveProperty('user_id');
     const asOther = await okello.get(`/api/reports/${created.body.id}`);
-    expect(asOther.body.report.privateDetails).toBeUndefined();
+    expect(asOther.body.report.identifyingDetails).toBeUndefined();
     const asOwner = await namusoke.get(`/api/reports/${created.body.id}`);
-    expect(asOwner.body.report.privateDetails).toMatch(/JK/);
+    expect(asOwner.body.report.identifyingDetails).toMatch(/JK/);
     const asAdmin = await admin.get(`/api/reports/${created.body.id}`);
-    expect(asAdmin.body.report.privateDetails).toMatch(/JK/);
+    expect(asAdmin.body.report.identifyingDetails).toMatch(/JK/);
   });
 
   test('TC-R3 a student cannot edit another student\'s report', async () => {
@@ -133,7 +133,7 @@ describe('Reports, privacy and search', () => {
     const res = await namusoke.put('/api/reports/1').send({
       type: 'found', title: 'Set of keys with a blue keyring', categoryId: 1, locationId: 1,
       description: 'Three keys on a blue plastic keyring, found under a chair in N5B.',
-      privateDetails: 'Inscription "D.O. RM 14" on the back.', eventDate: '2026-11-17',
+      identifyingDetails: 'Inscription "D.O. RM 14" on the back.', eventDate: '2026-11-17',
     });
     expect(res.status).toBe(200);
   });
@@ -152,18 +152,19 @@ describe('Reports, privacy and search', () => {
 
   test('TC-R6 non-image uploads are rejected', async () => {
     const res = await okello.post('/api/reports')
-      .field({ ...validFound, privateDetails: '' })
-      .attach('photo', Buffer.from('not really an image file'), { filename: 'evil.jpg', contentType: 'image/jpeg' });
+      .field({ ...validFound, identifyingDetails: '' })
+      .attach('photos', Buffer.from('not really an image file'), { filename: 'evil.jpg', contentType: 'image/jpeg' });
     expect(res.status).toBe(400);
-    expect(res.body.fields.photo).toBeDefined();
+    expect(res.body.fields.photos).toBeDefined();
   });
 
   test('TC-R7 valid PNG photo is stored and served', async () => {
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
-    const res = await okello.post('/api/reports').field({ ...validFound, type: 'lost', privateDetails: '' })
-      .attach('photo', png, { filename: 'p.png', contentType: 'image/png' });
+    const res = await okello.post('/api/reports').field({ ...validFound, type: 'lost', identifyingDetails: '' })
+      .attach('photos', png, { filename: 'p.png', contentType: 'image/png' });
     expect(res.status).toBe(201);
-    const photo = await request(app).get(`/api/reports/${res.body.id}/photo`);
+    const detail = await request(app).get(`/api/reports/${res.body.id}`);
+    const photo = await request(app).get(detail.body.report.images[0].url);
     expect(photo.status).toBe(200);
     expect(photo.headers['content-type']).toBe('image/png');
   });
@@ -298,16 +299,17 @@ describe('Admin review, competing claims and confirmed return', () => {
 describe('Photo privacy', () => {
   test('TC-R8 EXIF metadata (e.g. GPS, device) is stripped from uploaded JPEGs', async () => {
     const fs = require('fs');
-    const { stripJpegMetadata } = require('../src/utils/photos');
+    const { stripJpegMetadata } = require('../src/utils/images');
     const withExif = fs.readFileSync(require('path').join(__dirname, 'fixtures', 'exif.jpg'));
     expect(withExif.includes('SecretPhoneMaker')).toBe(true);
     const clean = stripJpegMetadata(withExif);
     expect(clean.includes('SecretPhoneMaker')).toBe(false);
     expect(clean.slice(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
-    const res = await okello.post('/api/reports').field({ ...validFound, type: 'lost', privateDetails: '' })
-      .attach('photo', withExif, { filename: 'p.jpg', contentType: 'image/jpeg' });
+    const res = await okello.post('/api/reports').field({ ...validFound, type: 'lost', identifyingDetails: '' })
+      .attach('photos', withExif, { filename: 'p.jpg', contentType: 'image/jpeg' });
     expect(res.status).toBe(201);
-    const photo = await request(app).get(`/api/reports/${res.body.id}/photo`);
+    const detail = await request(app).get(`/api/reports/${res.body.id}`);
+    const photo = await request(app).get(detail.body.report.images[0].url);
     expect(photo.body.includes('SecretPhoneMaker')).toBe(false);
   });
 });

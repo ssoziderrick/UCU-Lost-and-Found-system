@@ -44,7 +44,14 @@ INSERT INTO student_registry (registration_number, full_name, university_email, 
 -- Location ids: 1 N5B, 2 Hamu Mukasa Library, 3 Touch of Class, 4 Premium Hostel, 5 Nkoyoyo Hall,
 --               6 Bishop Tucker Building, 7 Allan Galpin Health Centre, 8 Main Chapel, 9 Sports Grounds,
 --               10 Main Gate, 11 Technology Building, 12 Dining Hall, 13 Other / Not listed
-INSERT INTO reports (id, user_id, type, title, category_id, description, private_details,
+-- Reports are staged in a temporary table so the confidential identifying details can be split
+-- into report_confidential (migration 003) while the sample data stays readable in one place.
+CREATE TEMPORARY TABLE seed_reports (
+  id INT UNSIGNED, user_id INT UNSIGNED, type VARCHAR(10), title VARCHAR(120), category_id INT UNSIGNED,
+  description TEXT, private_details TEXT, event_date DATE, location_id INT UNSIGNED,
+  location_detail VARCHAR(150), status VARCHAR(30), returned_at DATETIME
+);
+INSERT INTO seed_reports (id, user_id, type, title, category_id, description, private_details,
                      event_date, location_id, location_detail, status, returned_at) VALUES
  -- The scenario from the brief: Namusoke found keys in N5B; Okello lost them.
  (1, 3, 'found', 'Set of keys with a blue keyring', 1,
@@ -87,6 +94,16 @@ INSERT INTO reports (id, user_id, type, title, category_id, description, private
      NULL, CURDATE() - INTERVAL 7 DAY, 12, NULL, 'closed', NULL);
 
 -- Claims
+
+INSERT INTO reports (id, user_id, type, title, category_id, description, event_date, location_id,
+                     location_detail, status, returned_at, custody)
+  SELECT id, user_id, type, title, category_id, description, event_date, location_id, location_detail, status,
+         returned_at, IF(type = 'found', 'lost_property_office', NULL)
+    FROM seed_reports;
+INSERT INTO report_confidential (report_id, identifying_details)
+  SELECT id, private_details FROM seed_reports WHERE private_details IS NOT NULL;
+DROP TEMPORARY TABLE seed_reports;
+
 INSERT INTO claims (id, report_id, claimant_id, evidence, status, admin_reason, collection_instructions,
                     reviewed_by, reviewed_at, collected_at) VALUES
  -- Competing pending claims on the phone (report 3)

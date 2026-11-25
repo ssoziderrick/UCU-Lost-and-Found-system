@@ -23,6 +23,7 @@ app.use(loadUser);
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/images', require('./routes/images'));
 const { me, claims } = require('./routes/me');
 app.use('/api/me', me);
 app.use('/api/claims', claims);

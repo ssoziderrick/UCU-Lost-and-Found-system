@@ -11,6 +11,8 @@ router.use(requireAdmin);
 
 // Accounts, registry, administrators and audit log (Phase 2).
 router.use(require('./adminPeople'));
+// Campus locations, zones and categories (Phase 3).
+router.use(require('./adminCatalog'));
 
 const logAction = (tx, adminId, action, reportId, claimId, note) =>
   tx.query('INSERT INTO admin_actions (admin_id, action, report_id, claim_id, note) VALUES (?, ?, ?, ?, ?)',
@@ -58,13 +60,14 @@ router.get('/claims/:id', can('claims.review'), async (req, res) => {
             u.id AS claimantId, u.full_name AS claimantName, u.email AS claimantEmail,
             u.registration_number AS claimantRegistrationNumber, u.phone AS claimantPhone,
             r.id AS reportId, r.title AS reportTitle, r.description AS reportDescription,
-            r.private_details AS reportPrivateDetails, r.status AS reportStatus, r.event_date AS reportDate,
+            rc.identifying_details AS reportPrivateDetails, r.status AS reportStatus, r.event_date AS reportDate,
             l.name AS reportLocation, f.full_name AS finderName, f.email AS finderEmail
        FROM claims cl
        JOIN users u   ON u.id = cl.claimant_id
        JOIN reports r ON r.id = cl.report_id
        JOIN users f   ON f.id = r.user_id
-       JOIN locations l ON l.id = r.location_id
+       JOIN campus_locations l ON l.id = r.location_id
+       LEFT JOIN report_confidential rc ON rc.report_id = r.id
        LEFT JOIN users rv ON rv.id = cl.reviewed_by
       WHERE cl.id = ?`, [Number(req.params.id)]);
   if (!claim) throw notFound('Claim not found.');
@@ -155,12 +158,13 @@ router.get('/reports', can('reports.moderate'), async (req, res) => {
   if (['open', 'awaiting_collection', 'returned', 'closed', 'removed'].includes(status)) { where.push('r.status = ?'); params.push(status); }
   if (type === 'lost' || type === 'found') { where.push('r.type = ?'); params.push(type); }
   const rows = await db.query(
-    `SELECT r.id, r.type, r.title, r.status, r.event_date AS eventDate, r.private_details AS privateDetails,
+    `SELECT r.id, r.type, r.title, r.status, r.event_date AS eventDate, rc.identifying_details AS privateDetails,
             r.status_note AS statusNote, r.created_at AS createdAt, c.name AS category, l.name AS location,
             u.full_name AS reporterName, u.email AS reporterEmail,
             (SELECT COUNT(*) FROM claims cl WHERE cl.report_id = r.id AND cl.status='pending') AS pendingClaims
        FROM reports r JOIN users u ON u.id = r.user_id
-       JOIN categories c ON c.id = r.category_id JOIN locations l ON l.id = r.location_id
+       JOIN categories c ON c.id = r.category_id JOIN campus_locations l ON l.id = r.location_id
+       LEFT JOIN report_confidential rc ON rc.report_id = r.id
        ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
       ORDER BY r.created_at DESC, r.id DESC`, params);
   res.json({ items: rows });
