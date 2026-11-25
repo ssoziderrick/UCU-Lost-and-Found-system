@@ -1,20 +1,23 @@
 // /api/admin — claim review, decisions, confirmed returns, report moderation.
-// Every route here requires role = 'admin' (enforced on the server, not just hidden in the UI).
+// Every route requires an administrator, and each one a specific permission of their role (server-enforced).
 const express = require('express');
 const db = require('../db');
 const { validate } = require('../validation');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requirePermission: can } = require('../middleware/auth');
 const { notFound, conflict, badRequest } = require('../utils/errors');
 
 const router = express.Router();
 router.use(requireAdmin);
+
+// Accounts, registry, administrators and audit log (Phase 2).
+router.use(require('./adminPeople'));
 
 const logAction = (tx, adminId, action, reportId, claimId, note) =>
   tx.query('INSERT INTO admin_actions (admin_id, action, report_id, claim_id, note) VALUES (?, ?, ?, ?, ?)',
     [adminId, action, reportId, claimId, note]);
 
 // Dashboard counts
-router.get('/stats', async (_req, res) => {
+router.get('/stats', can('stats.view'), async (_req, res) => {
   const [row] = await db.query(`
     SELECT
       (SELECT COUNT(*) FROM claims WHERE status = 'pending')                    AS pendingClaims,
@@ -26,7 +29,7 @@ router.get('/stats', async (_req, res) => {
 });
 
 // Claims queue (filter by status)
-router.get('/claims', async (req, res) => {
+router.get('/claims', can('claims.review'), async (req, res) => {
   const { status, reportId } = req.query;
   const params = [];
   const conds = [];
@@ -47,13 +50,13 @@ router.get('/claims', async (req, res) => {
 });
 
 // Full claim detail: evidence side-by-side with the finder's private identifying details
-router.get('/claims/:id', async (req, res) => {
+router.get('/claims/:id', can('claims.review'), async (req, res) => {
   const [claim] = await db.query(
     `SELECT cl.id, cl.status, cl.evidence, cl.created_at AS createdAt, cl.admin_reason AS adminReason,
             cl.collection_instructions AS collectionInstructions, cl.reviewed_at AS reviewedAt,
             cl.collected_at AS collectedAt, rv.full_name AS reviewedBy,
             u.id AS claimantId, u.full_name AS claimantName, u.email AS claimantEmail,
-            u.student_number AS claimantStudentNumber, u.phone AS claimantPhone,
+            u.registration_number AS claimantRegistrationNumber, u.phone AS claimantPhone,
             r.id AS reportId, r.title AS reportTitle, r.description AS reportDescription,
             r.private_details AS reportPrivateDetails, r.status AS reportStatus, r.event_date AS reportDate,
             l.name AS reportLocation, f.full_name AS finderName, f.email AS finderEmail
@@ -73,7 +76,7 @@ router.get('/claims/:id', async (req, res) => {
 });
 
 // Approve: claim accepted for collection. Only ONE approved claim per item.
-router.post('/claims/:id/approve', async (req, res) => {
+router.post('/claims/:id/approve', can('claims.decide'), async (req, res) => {
   const { reason, collectionInstructions } = validate('approve', req.body);
   const id = Number(req.params.id);
   await db.transaction(async (tx) => {
@@ -94,7 +97,7 @@ router.post('/claims/:id/approve', async (req, res) => {
 });
 
 // Reject a pending claim with a reason
-router.post('/claims/:id/reject', async (req, res) => {
+router.post('/claims/:id/reject', can('claims.decide'), async (req, res) => {
   const { reason } = validate('reasonOnly', req.body);
   const id = Number(req.params.id);
   await db.transaction(async (tx) => {
@@ -110,7 +113,7 @@ router.post('/claims/:id/reject', async (req, res) => {
 });
 
 // Cancel an approval (e.g. claimant never came to collect) — item goes back to open
-router.post('/claims/:id/revoke', async (req, res) => {
+router.post('/claims/:id/revoke', can('claims.decide'), async (req, res) => {
   const { reason } = validate('reasonOnly', req.body);
   const id = Number(req.params.id);
   await db.transaction(async (tx) => {
@@ -127,7 +130,7 @@ router.post('/claims/:id/revoke', async (req, res) => {
 });
 
 // Confirm collection: ONLY after an approved claim. Marks the item returned and closes other claims.
-router.post('/claims/:id/confirm-return', async (req, res) => {
+router.post('/claims/:id/confirm-return', can('returns.confirm'), async (req, res) => {
   const id = Number(req.params.id);
   await db.transaction(async (tx) => {
     const [cl] = await tx.query('SELECT id, report_id, status FROM claims WHERE id = ? FOR UPDATE', [id]);
@@ -145,7 +148,7 @@ router.post('/claims/:id/confirm-return', async (req, res) => {
 });
 
 // All reports (including private details and reporter) for moderation
-router.get('/reports', async (req, res) => {
+router.get('/reports', can('reports.moderate'), async (req, res) => {
   const { status, type } = req.query;
   const where = [];
   const params = [];
@@ -164,7 +167,7 @@ router.get('/reports', async (req, res) => {
 });
 
 // Remove an inappropriate report from public listings (or restore it)
-router.post('/reports/:id/remove', async (req, res) => {
+router.post('/reports/:id/remove', can('reports.moderate'), async (req, res) => {
   const { reason } = validate('reasonOnly', req.body);
   const id = Number(req.params.id);
   await db.transaction(async (tx) => {
@@ -180,7 +183,7 @@ router.post('/reports/:id/remove', async (req, res) => {
   res.json({ message: 'Report removed from public listings.' });
 });
 
-router.post('/reports/:id/restore', async (req, res) => {
+router.post('/reports/:id/restore', can('reports.moderate'), async (req, res) => {
   const id = Number(req.params.id);
   const result = await db.query("UPDATE reports SET status='open', status_note=NULL WHERE id = ? AND status='removed'", [id]);
   if (!result.affectedRows) throw conflict('Only removed reports can be restored.');
@@ -189,7 +192,7 @@ router.post('/reports/:id/restore', async (req, res) => {
 });
 
 // Decision history for a report
-router.get('/reports/:id/history', async (req, res) => {
+router.get('/reports/:id/history', can('reports.moderate'), async (req, res) => {
   const rows = await db.query(
     `SELECT a.id, a.action, a.claim_id AS claimId, a.note, a.created_at AS createdAt, u.full_name AS adminName
        FROM admin_actions a JOIN users u ON u.id = a.admin_id WHERE a.report_id = ? ORDER BY a.id`,

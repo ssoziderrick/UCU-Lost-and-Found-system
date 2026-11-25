@@ -1,6 +1,6 @@
 /**
  * Automated API tests (Jest + Supertest) against a real MySQL test database.
- * The test database (ucu_lost_found_test) is rebuilt from schema.sql + seed.sql before the suite.
+ * The test database (ucu_lost_found_test) is rebuilt from the migrations + seed.sql before the suite.
  * Run:  npm test
  */
 const request = require('supertest');
@@ -16,9 +16,17 @@ const bcrypt = require('bcryptjs');
 const STUDENT_PW = 'TestOnly-Student-1';
 const ADMIN_PW = 'TestOnly-Admin-1';
 
-async function loginAs(email, password = STUDENT_PW) {
+/** Students sign in with their registration number, administrators with their staff ID. */
+async function loginAs(registrationNumber, password = STUDENT_PW) {
   const agent = request.agent(app);
-  const res = await agent.post('/api/auth/login').send({ email, password });
+  const res = await agent.post('/api/auth/login').send({ registrationNumber, password });
+  expect(res.status).toBe(200);
+  return agent;
+}
+
+async function loginAdmin(staffId = 'STAFF-0001', password = ADMIN_PW) {
+  const agent = request.agent(app);
+  const res = await agent.post('/api/auth/admin/login').send({ staffId, password });
   expect(res.status).toBe(200);
   return agent;
 }
@@ -35,52 +43,48 @@ beforeAll(async () => {
   await db.query('UPDATE users SET password_hash = ? WHERE role = ?', [bcrypt.hashSync(STUDENT_PW, 4), 'student']);
   await db.query('UPDATE users SET password_hash = ? WHERE role = ?', [bcrypt.hashSync(ADMIN_PW, 4), 'admin']);
   [okello, namusoke, mugisha, atim, kato] = await Promise.all([
-    loginAs('okello@students.ucu.test'), loginAs('namusoke@students.ucu.test'),
-    loginAs('mugisha@students.ucu.test'), loginAs('atim@students.ucu.test'), loginAs('kato@students.ucu.test'),
+    loginAs('S24B23/101'), loginAs('S24B23/102'), loginAs('S24B23/103'), loginAs('S24B23/104'), loginAs('S24B23/105'),
   ]);
-  admin = await loginAs('admin@lostfound.ucu.test', ADMIN_PW);
+  admin = await loginAdmin();
 }, 60000);
 
 afterAll(async () => { await db.pool.end(); });
 
 // ---------------------------------------------------------------------------
 describe('Accounts and authentication', () => {
-  test('TC-A1 registration rejects missing/invalid input with field messages', async () => {
-    const res = await request(app).post('/api/auth/register').send({ fullName: '', email: 'not-an-email', password: 'short' });
-    expect(res.status).toBe(400);
-    expect(res.body.fields.fullName).toMatch(/at least 2/);
-    expect(res.body.fields.email).toMatch(/valid email/);
-    expect(res.body.fields.password).toMatch(/at least 8/);
-  });
-
-  test('TC-A2 registration succeeds and stores a bcrypt hash, not the password', async () => {
+  test('TC-A1 open sign-up is gone; accounts come from the registry', async () => {
     const res = await request(app).post('/api/auth/register')
       .send({ fullName: 'Test Student', email: 'new@students.ucu.test', password: 'Passw0rd!' });
-    expect(res.status).toBe(201);
-    const [row] = await db.query('SELECT password_hash FROM users WHERE email = ?', ['new@students.ucu.test']);
-    expect(row.password_hash).not.toBe('Passw0rd!');
-    expect(row.password_hash).toMatch(/^\$2[aby]\$12\$/);
+    expect(res.status).toBe(410);
   });
 
-  test('TC-A3 duplicate email is refused', async () => {
-    const res = await request(app).post('/api/auth/register')
-      .send({ fullName: 'Someone', email: 'okello@students.ucu.test', password: 'Passw0rd1' });
-    expect(res.status).toBe(409);
+  test('TC-A2 login is by registration number, normalised (case and spaces ignored)', async () => {
+    const res = await request(app).post('/api/auth/login').send({ registrationNumber: ' s24b23 /105 ', password: STUDENT_PW });
+    expect(res.status).toBe(200);
+    expect(res.body.user.registrationNumber).toBe('S24B23/105');
+    expect(res.body.user.role).toBe('student');
+  });
+
+  test('TC-A3 email is no longer accepted as the student identifier', async () => {
+    const res = await request(app).post('/api/auth/login').send({ email: 'kato@students.ucu.test', password: STUDENT_PW });
+    expect(res.status).toBe(400);
+    expect(res.body.fields.registrationNumber).toMatch(/required/);
   });
 
   test('TC-A4 unsuccessful login gives a generic message', async () => {
-    const wrongPw = await request(app).post('/api/auth/login').send({ email: 'okello@students.ucu.test', password: 'wrong' });
-    const noUser = await request(app).post('/api/auth/login').send({ email: 'nobody@x.test', password: 'wrong' });
+    const wrongPw = await request(app).post('/api/auth/login').send({ registrationNumber: 'S24B23/101', password: 'wrong' });
+    const noUser = await request(app).post('/api/auth/login').send({ registrationNumber: 'S99X99/999', password: 'wrong' });
     expect(wrongPw.status).toBe(401);
     expect(noUser.status).toBe(401);
     expect(wrongPw.body.error).toBe(noUser.body.error);
+    await db.query('UPDATE users SET failed_logins = 0 WHERE registration_number = ?', ['S24B23/101']);
   });
 
   test('TC-A5 logout ends authenticated access even if the old cookie is replayed', async () => {
     const agent = request.agent(app);
-    const login = await agent.post('/api/auth/login').send({ email: 'kato@students.ucu.test', password: STUDENT_PW });
+    const login = await agent.post('/api/auth/login').send({ registrationNumber: 'S24B23/105', password: STUDENT_PW });
     const cookie = login.headers['set-cookie'][0].split(';')[0];
-    expect((await agent.get('/api/auth/me')).body.user.email).toBe('kato@students.ucu.test');
+    expect((await agent.get('/api/auth/me')).body.user.registrationNumber).toBe('S24B23/105');
     await agent.post('/api/auth/logout');
     const replay = await request(app).get('/api/me/reports').set('Cookie', cookie);
     expect(replay.status).toBe(401);

@@ -8,9 +8,13 @@
 USE ucu_lost_found;
 
 -- Users (ids 1–6). Hash 1 = administrator password, hash 2 = shared student demo password.
-INSERT INTO users (id, full_name, email, student_number, phone, password_hash, role) VALUES
- (1, 'Ruth Achieng', 'admin@lostfound.ucu.test', NULL, '0700000001',
-     '$2b$12$FFaH8BgyVrhazu0HrJIvhOSqDzLeZF1to6uZYha5/ZhmtWftH52u6', 'admin'),
+-- Administrator (staff ID STAFF-0001, super admin). Students sign in with their registration number.
+INSERT INTO users (id, full_name, email, staff_id, phone, password_hash, role, admin_role_id) VALUES
+ (1, 'Ruth Achieng', 'admin@lostfound.ucu.test', 'STAFF-0001', '0700000001',
+     '$2b$12$FFaH8BgyVrhazu0HrJIvhOSqDzLeZF1to6uZYha5/ZhmtWftH52u6', 'admin',
+     (SELECT id FROM admin_roles WHERE code = 'super_admin'));
+
+INSERT INTO users (id, full_name, email, registration_number, phone, password_hash, role) VALUES
  (2, 'Daniel Okello',   'okello@students.ucu.test',   'S24B23/101', '0772000101',
      '$2b$12$hduiN/GmGkKXHdRw6sthZ.BThiLoFIQXHS1WMDE6WBYnZI2LKRx36', 'student'),
  (3, 'Grace Namusoke',  'namusoke@students.ucu.test', 'S24B23/102', '0772000102',
@@ -21,6 +25,19 @@ INSERT INTO users (id, full_name, email, student_number, phone, password_hash, r
      '$2b$12$hduiN/GmGkKXHdRw6sthZ.BThiLoFIQXHS1WMDE6WBYnZI2LKRx36', 'student'),
  (6, 'Joel Kato',       'kato@students.ucu.test',     'S24B23/105', NULL,
      '$2b$12$hduiN/GmGkKXHdRw6sthZ.BThiLoFIQXHS1WMDE6WBYnZI2LKRx36', 'student');
+
+-- Student registry (fictional). Students 2-6 already have accounts; the rest can activate one.
+-- S24B23/108 has no university email, so activation must go through the office.
+INSERT INTO student_registry (registration_number, full_name, university_email, programme, status) VALUES
+ ('S24B23/101', 'Daniel Okello',   'okello@students.ucu.test',   'BSc Computer Science', 'enrolled'),
+ ('S24B23/102', 'Grace Namusoke',  'namusoke@students.ucu.test', 'BSc Information Technology', 'enrolled'),
+ ('S24B23/103', 'Brian Mugisha',   'mugisha@students.ucu.test',  'BSc Computer Science', 'enrolled'),
+ ('S24B23/104', 'Esther Atim',     'atim@students.ucu.test',     'Bachelor of Laws', 'enrolled'),
+ ('S24B23/105', 'Joel Kato',       'kato@students.ucu.test',     'BBA Accounting', 'enrolled'),
+ ('S24B23/106', 'Mercy Nambi',     'nambi@students.ucu.test',    'BSc Nursing', 'enrolled'),
+ ('S24B23/107', 'Ivan Ssemwogerere', 'ssemwogerere@students.ucu.test', 'BSc Software Engineering', 'enrolled'),
+ ('S24B23/108', 'Patience Akello', NULL,                          'Bachelor of Education', 'enrolled'),
+ ('S22B23/044', 'Samuel Opio',     'opio@students.ucu.test',     'BSc Computer Science', 'graduated');
 
 -- Category ids: 1 Keys, 2 Phones & Electronics, 3 Bags, 4 Books & Stationery, 5 ID & Cards,
 --               6 Clothing, 7 Jewellery & Accessories, 8 Water Bottles & Flasks, 9 Documents, 10 Other
