@@ -11,7 +11,8 @@
     "db:migrate": "npm --prefix server run db:migrate",
     "db:setup": "npm --prefix server run db:setup",
     "test": "npm --prefix server test && npm --prefix client test",
-    "admin:create": "npm --prefix server run admin:create --"
+    "admin:create": "npm --prefix server run admin:create --",
+    "match:sweep": "npm --prefix server run match:sweep"
   },
   "engines": {
     "node": ">=18"

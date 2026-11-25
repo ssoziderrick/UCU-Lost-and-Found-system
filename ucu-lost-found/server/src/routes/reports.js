@@ -7,6 +7,8 @@ const { requireAuth } = require('../middleware/auth');
 const { photosUpload, prepareImage, MAX_FILES } = require('../utils/images');
 const images = require('../services/imageStore');
 const { badRequest, forbidden, notFound, conflict } = require('../utils/errors');
+const matching = require('../matching/service');
+const { notify, claimMessages } = require('../services/notifications');
 
 const router = express.Router();
 const PAGE_SIZE = 12;
@@ -172,6 +174,7 @@ router.post('/', requireAuth, photosUpload, async (req, res) => {
     if (prepared.length) await images.addImages(tx, { reportId: r.insertId, userId: req.user.id, images: prepared, visibility: vis });
     return r.insertId;
   });
+  await matching.refreshSafely(id);
   res.status(201).json({ message: 'Your report has been published.', id, refCode: refCode(id) });
 });
 
@@ -201,6 +204,7 @@ router.put('/:id', requireAuth, async (req, res) => {
         extra.custody, extra.custodyNote, existing.id]);
     await saveConfidential(tx, existing.id, extra.identifyingDetails);
   });
+  await matching.refreshSafely(Number(req.params.id));
   res.json({ message: 'Your report has been updated.', id: Number(req.params.id) });
 });
 
@@ -271,6 +275,7 @@ router.post('/:id/close', requireAuth, async (req, res) => {
   if (r.type !== 'lost') throw badRequest('Found-item reports are closed by the administrator when the item is returned.');
   if (r.status !== 'open') throw conflict('This report is already closed.');
   await db.query("UPDATE reports SET status = 'closed', status_note = 'Closed by reporter: item recovered' WHERE id = ?", [id]);
+  await matching.refreshSafely(id);
   res.json({ message: 'Report marked as resolved. Glad you found it!' });
 });
 
@@ -283,7 +288,7 @@ router.post('/:id/claims', requireAuth, async (req, res) => {
 
   const claimId = await db.transaction(async (tx) => {
     // Lock the report row so a concurrent approval/return cannot slip in between checks.
-    const [r] = await tx.query('SELECT id, user_id, type, status FROM reports WHERE id = ? FOR UPDATE', [reportId]);
+    const [r] = await tx.query('SELECT id, user_id, type, status, title FROM reports WHERE id = ? FOR UPDATE', [reportId]);
     if (!r || r.status === 'removed') throw notFound('This report does not exist or has been removed.');
     if (r.type !== 'found') throw badRequest('Claims can only be made on found items. This is a lost-item report.');
     if (r.user_id === req.user.id) throw forbidden('You cannot claim an item that you reported as found.');
@@ -294,9 +299,11 @@ router.post('/:id/claims', requireAuth, async (req, res) => {
     if (dup) throw conflict('You have already submitted a claim for this item. Check "My claims" for its status.');
 
     const ins = await tx.query('INSERT INTO claims (report_id, claimant_id, evidence) VALUES (?, ?, ?)', [reportId, req.user.id, evidence]);
-    return ins.insertId;
+    return { id: ins.insertId, title: r.title };
   });
-  res.status(201).json({ message: 'Your claim has been submitted privately. The administrator will review it.', id: claimId });
+  await matching.markClaimed(reportId, req.user.id).catch((e) => console.error('markClaimed failed:', e.message));
+  await notify({ userId: req.user.id, link: `/my/claims/${claimId.id}`, dedupeKey: `claim:${claimId.id}:submitted`, ...claimMessages.submitted(claimId.title) });
+  res.status(201).json({ message: 'Your claim has been submitted privately. The administrator will review it.', id: claimId.id });
 });
 
 module.exports = router;

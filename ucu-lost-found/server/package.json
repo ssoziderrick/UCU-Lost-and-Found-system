@@ -9,7 +9,8 @@
     "db:migrate": "node scripts/migrate.js",
     "db:setup": "node scripts/setup-db.js",
     "test": "jest --runInBand",
-    "admin:create": "node scripts/create-admin.js"
+    "admin:create": "node scripts/create-admin.js",
+    "match:sweep": "node scripts/match-sweep.js"
   },
   "engines": {
     "node": ">=18"

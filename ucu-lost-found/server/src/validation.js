@@ -113,6 +113,18 @@ const schemas = {
     custodyNote: optionalText(255, 'Note about where the item is'),
   }),
 
+  preferences: z.object({ notifyByEmail: z.boolean({ error: 'notifyByEmail must be true or false.' }) }),
+
+  matchingSettings: z.object({
+    weights: z.object({
+      name: z.number().min(0).max(1), category: z.number().min(0).max(1), location: z.number().min(0).max(1),
+      date: z.number().min(0).max(1), description: z.number().min(0).max(1),
+    }).refine((w) => Math.abs(Object.values(w).reduce((a, b) => a + b, 0) - 1) < 0.001, 'The weights must add up to 1 (100%).'),
+    notifyThreshold: z.number().gt(0).max(1),
+    listThreshold: z.number().gt(0).max(1),
+    windowDays: z.number().int().min(1).max(90),
+  }).refine((s) => s.listThreshold <= s.notifyThreshold, { message: 'The list threshold must not be higher than the notify threshold.', path: ['listThreshold'] }),
+
   imagePatch: z.object({
     visibility: z.enum(['public', 'private'], { error: 'Visibility must be public or private.' }).optional(),
     isCover: z.boolean().optional(),

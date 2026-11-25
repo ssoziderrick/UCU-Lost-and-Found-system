@@ -5,6 +5,20 @@ const db = require('../db');
 const { validate } = require('../validation');
 const { requireAdmin, requirePermission: can } = require('../middleware/auth');
 const { notFound, conflict, badRequest } = require('../utils/errors');
+const matching = require('../matching/service');
+const { notify, claimMessages } = require('../services/notifications');
+
+/** Claim facts needed for notifications after the transaction commits. */
+const claimInfo = (tx, id) => tx.query(
+  `SELECT cl.id, cl.claimant_id AS claimantId, cl.report_id AS reportId, r.title, r.user_id AS finderId
+     FROM claims cl JOIN reports r ON r.id = cl.report_id WHERE cl.id = ?`, [id]).then((rows) => rows[0]);
+/** Pending claimants on a report, so they can be told when their claim is closed automatically. */
+const pendingClaims = (tx, reportId) => tx.query(
+  `SELECT cl.id, cl.claimant_id AS claimantId, r.title FROM claims cl JOIN reports r ON r.id = cl.report_id
+    WHERE cl.report_id = ? AND cl.status = 'pending'`, [reportId]);
+const tellRejected = (claims, reason) => Promise.all(claims.map((c) => notify({
+  userId: c.claimantId, link: `/my/claims/${c.id}`, dedupeKey: `claim:${c.id}:rejected`, ...claimMessages.rejected(c.title, reason),
+})));
 
 const router = express.Router();
 router.use(requireAdmin);
@@ -13,6 +27,8 @@ router.use(requireAdmin);
 router.use(require('./adminPeople'));
 // Campus locations, zones and categories (Phase 3).
 router.use(require('./adminCatalog'));
+// Potential matches and matching settings (Phase 4).
+router.use(require('./adminMatching'));
 
 const logAction = (tx, adminId, action, reportId, claimId, note) =>
   tx.query('INSERT INTO admin_actions (admin_id, action, report_id, claim_id, note) VALUES (?, ?, ?, ?, ?)',
@@ -96,6 +112,9 @@ router.post('/claims/:id/approve', can('claims.decide'), async (req, res) => {
     await tx.query("UPDATE reports SET status='awaiting_collection' WHERE id = ?", [cl.report_id]);
     await logAction(tx, req.user.id, 'approve_claim', cl.report_id, id, reason);
   });
+  const info = await claimInfo(db, id);
+  await matching.refreshSafely(info.reportId);
+  await notify({ userId: info.claimantId, link: `/my/claims/${id}`, dedupeKey: `claim:${id}:approved`, ...claimMessages.approved(info.title, collectionInstructions) });
   res.json({ message: 'Claim approved. The claimant can now see the collection instructions.' });
 });
 
@@ -112,6 +131,7 @@ router.post('/claims/:id/reject', can('claims.decide'), async (req, res) => {
       [reason, req.user.id, id]);
     await logAction(tx, req.user.id, 'reject_claim', cl.report_id, id, reason);
   });
+  await tellRejected([await claimInfo(db, id)], reason);
   res.json({ message: 'Claim rejected. The claimant can see your reason.' });
 });
 
@@ -129,24 +149,34 @@ router.post('/claims/:id/revoke', can('claims.decide'), async (req, res) => {
     await tx.query("UPDATE reports SET status='open' WHERE id = ? AND status='awaiting_collection'", [cl.report_id]);
     await logAction(tx, req.user.id, 'revoke_approval', cl.report_id, id, reason);
   });
+  const revoked = await claimInfo(db, id);
+  await matching.refreshSafely(revoked.reportId);
+  await tellRejected([revoked], `The approval was cancelled: ${reason}`);
   res.json({ message: 'Approval cancelled. The item is open for claims again.' });
 });
 
 // Confirm collection: ONLY after an approved claim. Marks the item returned and closes other claims.
 router.post('/claims/:id/confirm-return', can('returns.confirm'), async (req, res) => {
   const id = Number(req.params.id);
-  await db.transaction(async (tx) => {
+  const others = await db.transaction(async (tx) => {
     const [cl] = await tx.query('SELECT id, report_id, status FROM claims WHERE id = ? FOR UPDATE', [id]);
     if (!cl) throw notFound('Claim not found.');
     if (cl.status !== 'approved') throw conflict('A return can only be confirmed for an approved claim.');
     await tx.query("UPDATE claims SET status='collected', collected_at=NOW() WHERE id = ?", [id]);
     await tx.query("UPDATE reports SET status='returned', returned_at=NOW() WHERE id = ?", [cl.report_id]);
+    const closing = await pendingClaims(tx, cl.report_id);
     await tx.query(
       `UPDATE claims SET status='rejected', admin_reason='Item has been returned to its verified owner.',
               reviewed_by=?, reviewed_at=NOW()
         WHERE report_id = ? AND status = 'pending'`, [req.user.id, cl.report_id]);
     await logAction(tx, req.user.id, 'confirm_return', cl.report_id, id, 'Collection confirmed');
+    return closing;
   });
+  const done = await claimInfo(db, id);
+  await matching.refreshSafely(done.reportId);
+  await notify({ userId: done.claimantId, link: `/my/claims/${id}`, dedupeKey: `claim:${id}:returned`, ...claimMessages.returnedToClaimant(done.title) });
+  await notify({ userId: done.finderId, link: `/reports/${done.reportId}`, dedupeKey: `report:${done.reportId}:returned`, ...claimMessages.returnedToFinder(done.title) });
+  await tellRejected(others, 'The item has been returned to its verified owner.');
   res.json({ message: 'Return confirmed. The listing now shows the item as returned.' });
 });
 
@@ -174,16 +204,20 @@ router.get('/reports', can('reports.moderate'), async (req, res) => {
 router.post('/reports/:id/remove', can('reports.moderate'), async (req, res) => {
   const { reason } = validate('reasonOnly', req.body);
   const id = Number(req.params.id);
-  await db.transaction(async (tx) => {
+  const closed = await db.transaction(async (tx) => {
     const [r] = await tx.query('SELECT status FROM reports WHERE id = ? FOR UPDATE', [id]);
     if (!r) throw notFound('Report not found.');
     if (r.status === 'returned') throw badRequest('Returned items stay listed as a record of the return.');
     if (r.status === 'awaiting_collection') throw conflict('Cancel the approved claim before removing this report.');
+    const closing = await pendingClaims(tx, id);
     await tx.query("UPDATE reports SET status='removed', status_note=? WHERE id = ?", [reason, id]);
     await tx.query("UPDATE claims SET status='rejected', admin_reason=?, reviewed_by=?, reviewed_at=NOW() WHERE report_id=? AND status='pending'",
       [`Report removed: ${reason}`, req.user.id, id]);
     await logAction(tx, req.user.id, 'remove_report', id, null, reason);
+    return closing;
   });
+  await matching.refreshSafely(id);
+  await tellRejected(closed, `The report was removed: ${reason}`);
   res.json({ message: 'Report removed from public listings.' });
 });
 
@@ -192,6 +226,7 @@ router.post('/reports/:id/restore', can('reports.moderate'), async (req, res) =>
   const result = await db.query("UPDATE reports SET status='open', status_note=NULL WHERE id = ? AND status='removed'", [id]);
   if (!result.affectedRows) throw conflict('Only removed reports can be restored.');
   await logAction(db, req.user.id, 'restore_report', id, null, null);
+  await matching.refreshSafely(id);
   res.json({ message: 'Report restored to public listings.' });
 });
 

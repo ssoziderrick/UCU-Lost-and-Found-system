@@ -15,3 +15,8 @@ setInterval(() => {
              WHERE (used_at IS NOT NULL OR expires_at < NOW()) AND created_at < NOW() - INTERVAL 7 DAY`)
     .catch((e) => console.error('Token cleanup failed', e));
 }, 60 * 60 * 1000).unref();
+
+// Matching sweep every 6 hours, in case a request failed before it could re-score its report.
+setInterval(() => {
+  require('./matching/service').sweep().catch((e) => console.error('Matching sweep failed', e));
+}, 6 * 60 * 60 * 1000).unref();

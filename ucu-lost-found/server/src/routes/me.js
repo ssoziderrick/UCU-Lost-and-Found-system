@@ -3,7 +3,8 @@
 const express = require('express');
 const db = require('../db');
 const { requireAuth } = require('../middleware/auth');
-const { notFound } = require('../utils/errors');
+const { notFound, badRequest } = require('../utils/errors');
+const { validate } = require('../validation');
 const { refCode } = require('./reports');
 const { imageUrl } = require('../services/imageStore');
 
@@ -38,6 +39,85 @@ me.get('/claims', async (req, res) => {
       WHERE cl.claimant_id = ?
       ORDER BY cl.created_at DESC, cl.id DESC`, [req.user.id]);
   res.json({ items: rows });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Notifications (students and administrators)
+const NOTE_PAGE = 20;
+me.get('/notifications', async (req, res) => {
+  const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+  const unreadOnly = req.query.unread === '1';
+  const where = `WHERE user_id = ?${unreadOnly ? ' AND read_at IS NULL' : ''}`;
+  const [{ total }] = await db.query(`SELECT COUNT(*) AS total FROM notifications ${where}`, [req.user.id]);
+  const items = await db.query(
+    `SELECT id, type, title, body, link, read_at AS readAt, created_at AS createdAt FROM notifications ${where}
+      ORDER BY id DESC LIMIT ? OFFSET ?`, [req.user.id, NOTE_PAGE, (page - 1) * NOTE_PAGE]);
+  const [{ unread }] = await db.query('SELECT COUNT(*) AS unread FROM notifications WHERE user_id = ? AND read_at IS NULL', [req.user.id]);
+  const [{ notify_email: notifyEmail }] = await db.query('SELECT notify_email FROM users WHERE id = ?', [req.user.id]);
+  res.json({ items, page, pageSize: NOTE_PAGE, total, totalPages: Math.max(1, Math.ceil(total / NOTE_PAGE)), unread, notifyByEmail: Boolean(notifyEmail) });
+});
+
+me.get('/notifications/unread-count', async (req, res) => {
+  const [{ count }] = await db.query('SELECT COUNT(*) AS count FROM notifications WHERE user_id = ? AND read_at IS NULL', [req.user.id]);
+  res.json({ count });
+});
+
+me.post('/notifications/read', async (req, res) => {
+  if (req.body?.all === true) {
+    await db.query('UPDATE notifications SET read_at = NOW() WHERE user_id = ? AND read_at IS NULL', [req.user.id]);
+  } else {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(Number).filter((n) => n > 0).slice(0, 200) : [];
+    if (!ids.length) throw badRequest('Send { all: true } or a list of notification ids.');
+    // user_id in the WHERE clause: you can only mark your own notifications.
+    await db.query('UPDATE notifications SET read_at = NOW() WHERE user_id = ? AND id IN (?) AND read_at IS NULL', [req.user.id, ids]);
+  }
+  const [{ count }] = await db.query('SELECT COUNT(*) AS count FROM notifications WHERE user_id = ? AND read_at IS NULL', [req.user.id]);
+  res.json({ unread: count });
+});
+
+me.patch('/preferences', async (req, res) => {
+  const { notifyByEmail } = validate('preferences', req.body);
+  await db.query('UPDATE users SET notify_email = ? WHERE id = ?', [notifyByEmail ? 1 : 0, req.user.id]);
+  res.json({ message: notifyByEmail ? 'We’ll also email you about matches and claim decisions.' : 'Email notifications are off. You’ll still see them here.', notifyByEmail });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Potential matches for my lost reports. Only the found item's PUBLIC fields are returned.
+me.get('/matches', async (req, res) => {
+  const params = [req.user.id];
+  let extra = '';
+  if (Number(req.query.reportId) > 0) { extra = ' AND l.id = ?'; params.push(Number(req.query.reportId)); }
+  const rows = await db.query(
+    `SELECT m.id, m.score, m.breakdown, m.status, m.created_at AS createdAt,
+            l.id AS lostId, l.title AS lostTitle,
+            f.id AS foundId, f.title AS foundTitle, f.event_date AS foundDate, f.status AS foundStatus,
+            fl.name AS foundLocation, fc.name AS foundCategory,
+            (SELECT ri.storage_key FROM report_images ri WHERE ri.report_id = f.id AND ri.is_cover = 1) AS coverKey,
+            (SELECT cl.id FROM claims cl WHERE cl.report_id = f.id AND cl.claimant_id = ?) AS myClaimId
+       FROM item_matches m
+       JOIN reports l ON l.id = m.lost_report_id
+       JOIN reports f ON f.id = m.found_report_id
+       JOIN campus_locations fl ON fl.id = f.location_id
+       JOIN categories fc ON fc.id = f.category_id
+      WHERE l.user_id = ? AND m.status IN ('suggested', 'claimed') AND l.status = 'open' AND f.status = 'open'${extra}
+      ORDER BY m.score DESC, m.id DESC LIMIT 50`, [req.user.id, ...params]);
+  res.json({ items: rows.map(({ breakdown, coverKey, ...m }) => {
+    const b = typeof breakdown === 'string' ? JSON.parse(breakdown) : breakdown;
+    return {
+      ...m, score: Number(m.score), reasons: b.reasons, strength: Number(m.score) >= 0.7 ? 'strong' : 'possible',
+      found: { id: m.foundId, refCode: refCode(m.foundId), title: m.foundTitle, eventDate: m.foundDate, location: m.foundLocation,
+        category: m.foundCategory, coverImage: coverKey ? { url: imageUrl(coverKey) } : null },
+    };
+  }) });
+});
+
+me.post('/matches/:id/dismiss', async (req, res) => {
+  const r = await db.query(
+    `UPDATE item_matches m JOIN reports l ON l.id = m.lost_report_id
+        SET m.status = 'dismissed', m.dismissed_at = NOW()
+      WHERE m.id = ? AND l.user_id = ? AND m.status = 'suggested'`, [Number(req.params.id), req.user.id]);
+  if (!r.affectedRows) throw notFound('That suggestion was not found.');
+  res.json({ message: 'Hidden. We won’t suggest this item for that report again.' });
 });
 
 claims.get('/:id', requireAuth, async (req, res) => {
