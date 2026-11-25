@@ -55,14 +55,24 @@ export default function Browse() {
     <>
       <Alert type="success" onClose={() => setFlash('')}>{flash}</Alert>
       <section className="hero" aria-labelledby="hero-title">
-        <h1 id="hero-title">Lost something on campus? Found something?</h1>
-        <p>Search items reported across UCU, or report what you lost or found. Ownership is checked privately by the Lost &amp; Found office before anything is handed over.</p>
-        {!isAdmin && (
-          <div className="hero-actions">
-            <Link className="btn btn-accent" to={user ? '/reports/new?type=lost' : '/login'} state={user ? undefined : { from: '/reports/new?type=lost' }}>I lost something</Link>
-            <Link className="btn btn-light" to={user ? '/reports/new?type=found' : '/login'} state={user ? undefined : { from: '/reports/new?type=found' }}>I found something</Link>
+        <div className="hero-copy">
+          <span className="hero-kicker">UCU Campus Service</span>
+          <h1 id="hero-title">Lost something on campus?<br />Found something?</h1>
+          <p>Search reports across UCU or submit a new item. Ownership is verified privately before anything is returned.</p>
+          {!isAdmin && (
+            <div className="hero-actions">
+              <Link className="btn btn-accent" to={user ? '/reports/new?type=lost' : '/login'} state={user ? undefined : { from: '/reports/new?type=lost' }}>I lost something</Link>
+              <Link className="btn btn-light" to={user ? '/reports/new?type=found' : '/login'} state={user ? undefined : { from: '/reports/new?type=found' }}>I found something</Link>
+            </div>
+          )}
+        </div>
+        <div className="hero-note" aria-label="How the service works">
+          <span className="hero-note-icon" aria-hidden="true">✓</span>
+          <div>
+            <strong>Private and secure</strong>
+            <span>Public details only</span>
           </div>
-        )}
+        </div>
       </section>
 
       <div className="browse-layout">

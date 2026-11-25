@@ -32,7 +32,7 @@ export default function Layout() {
       <header className="site-header">
         <div className="container header-inner">
           <Link to="/" className="brand" aria-label="UCU Lost and Found home">
-            <svg viewBox="0 0 32 32" width="32" height="32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#f2b705" /><circle cx="14" cy="14" r="7" fill="none" stroke="#17365d" strokeWidth="3" /><path d="M19 19l6 6" stroke="#17365d" strokeWidth="3" strokeLinecap="round" /></svg>
+            <svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#f2b705" /><circle cx="14" cy="14" r="6.5" fill="none" stroke="#17365d" strokeWidth="3" /><path d="M18.5 18.5l6.5 6.5" stroke="#17365d" strokeWidth="3" strokeLinecap="round" /></svg>
             <span>UCU <strong>Lost &amp; Found</strong></span>
           </Link>
           <button type="button" className="menu-toggle" aria-expanded={menuOpen} aria-controls="main-nav"
