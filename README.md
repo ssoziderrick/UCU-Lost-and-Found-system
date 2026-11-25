@@ -4,9 +4,9 @@ A responsive web application for Uganda Christian University students to report 
 
 | Layer | Technology 
 
-| Frontend | React 19, React Router 7, Vite |
-| Backend | Node.js 18+, Express 5 |
-| Database | MySQL 8 (also tested on MariaDB 10.11) |
+| Frontend | React 19, React Router 7, Vite 
+| Backend | Node.js 18+, Express 5 
+| Database | MySQL 8 (also tested on MariaDB 10.11) 
 | Security | bcrypt password hashing, httpOnly session cookies stored server-side, Helmet, login rate limiting, zod validation |
 | Tests | Jest + Supertest (API, 30 tests), Vitest (client validation), Playwright walkthrough (end-to-end) |
 
