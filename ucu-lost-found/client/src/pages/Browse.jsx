@@ -137,7 +137,7 @@ export default function Browse() {
           )}
           {data && data.items.length > 0 && (
             <>
-              <ul className="grid" aria-label="Search results">
+              <ul className="results-grid" aria-label="Search results">
                 {data.items.map((r) => <li key={r.id}><ReportCard r={r} /></li>)}
               </ul>
               {data.totalPages > 1 && (

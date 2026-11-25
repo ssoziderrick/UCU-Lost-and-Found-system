@@ -168,7 +168,7 @@ main:focus { outline: none; }
   .hero h1 { font-size: 1.9rem; }
 }
 .results-title { font-size: 1.1rem; }
-.grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.results-grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 .report-card { position: relative; overflow: hidden; height: 100%; display: flex; flex-direction: column; transition: box-shadow .15s; }
 .report-card:hover, .report-card:focus-within { box-shadow: 0 4px 14px rgba(16,24,40,.14); }
 .report-card.is-done { opacity: .85; }

@@ -35,8 +35,7 @@ export default function AdminLayout() {
   }, [drawer]);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/', { state: { flash: 'You have been logged out.' } });
+    await logout(() => navigate('/', { replace: true, state: { flash: 'You have been logged out.' } }));
   };
 
   const params = new URLSearchParams(location.search);

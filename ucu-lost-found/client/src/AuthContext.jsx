@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from './api';
 
 const AuthContext = createContext(null);
@@ -27,8 +27,14 @@ export function AuthProvider({ children }) {
     return d;
   }, []);
 
-  const logout = useCallback(async () => {
-    try { await api.post('/api/auth/logout'); } finally { setUser(null); }
+  /**
+   * Ends the session. `then` (e.g. a navigate call) runs in the same transition as clearing the user,
+   * so protected pages never render signed-out and redirect to the login page on the way out.
+   */
+  const logout = useCallback(async (then) => {
+    try { await api.post('/api/auth/logout'); } finally {
+      startTransition(() => { setUser(null); then?.(); });
+    }
   }, []);
 
   const value = useMemo(() => ({ user, checking, login, register, logout, isAdmin: user?.role === 'admin' }),

@@ -30,8 +30,7 @@ export default function AppShell() {
   const isStudent = Boolean(user && !isAdmin);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/', { state: { flash: 'You have been logged out.' } });
+    await logout(() => navigate('/', { replace: true, state: { flash: 'You have been logged out.' } }));
   };
 
   return (
@@ -50,7 +49,8 @@ export default function AppShell() {
                 {STUDENT_NAV.map((n) => <NavLink key={n.to} to={n.to} className={desktopLink}>{n.label}</NavLink>)}
               </nav>
               <div className="ml-auto flex items-center gap-2">
-                <Button to="/reports/new" icon={Plus} size="md" className="hidden md:inline-flex">Report an item</Button>
+                {/* Wrapped: Button sets display itself, so `hidden` on it would lose to `inline-flex`. */}
+                <span className="hidden md:block"><Button to="/reports/new" icon={Plus}>Report an item</Button></span>
                 <UserMenu user={user} onLogout={handleLogout} />
               </div>
             </>
